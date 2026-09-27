@@ -98,6 +98,7 @@ def endpoint_plus_conditional_rescue(
     Y,
     rng,
     retention=0.30,
+    min_rescue=1,
     information="gaussian",
     metric="euclidean",
     k_means=5,
@@ -116,7 +117,11 @@ def endpoint_plus_conditional_rescue(
     endpoint = [int(j) for j in endpoint]
     selected = set(endpoint)
 
-    target_size = max(len(selected), int(math.ceil(retention * X.shape[1])))
+    target_size = max(
+        int(math.ceil(retention * X.shape[1])),
+        len(selected) + (min_rescue if len(selected) < X.shape[1] else 0),
+    )
+    target_size = min(X.shape[1], target_size)
     if len(selected) >= target_size:
         return sorted(selected), {"endpoint_size": len(endpoint), "rescued": 0}
 
