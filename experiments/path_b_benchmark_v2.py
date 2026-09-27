@@ -83,6 +83,78 @@ def run_discover(data, method, information, max_lag, alpha, n_shuffles, seed, n_
     return graph, time.perf_counter() - start
 
 
+def run_full_standard_matched(
+    data,
+    information,
+    max_lag,
+    alpha,
+    n_shuffles,
+    seed,
+):
+    """Run full standard oCSE with the same per-target RNG schedule as Path B."""
+    X, Y_all, feature_names, series = lagged_design(data, max_lag=max_lag)
+    n_nodes = series.shape[1]
+    graph = nx.MultiDiGraph()
+    graph.add_nodes_from([f"X{i}" for i in range(n_nodes)])
+    support_by_target = {}
+
+    start_total = time.perf_counter()
+    for target in range(n_nodes):
+        Y = Y_all[:, [target]]
+        rng = np.random.default_rng(seed * 10000 + target)
+        Z_init = np.column_stack(
+            [
+                series[max_lag - lag : series.shape[0] - lag, target]
+                for lag in range(1, max_lag + 1)
+            ]
+        )
+        support = standard_optimal_causation_entropy(
+            X,
+            Y,
+            Z_init,
+            rng,
+            alpha1=alpha,
+            alpha2=alpha,
+            n_shuffles=n_shuffles,
+            information=information,
+            reuse_gaussian_context=(information == "gaussian"),
+        )
+        support = [int(idx) for idx in support]
+        support_by_target[target] = set(support)
+
+        for global_idx in support:
+            source, lag = feature_names[global_idx]
+            others = [idx for idx in support if idx != global_idx]
+            Z_cond = X[:, others] if others else None
+            X_predictor = X[:, [global_idx]]
+            cmi = conditional_mutual_information(
+                X_predictor,
+                Y,
+                Z_cond,
+                method=information,
+            )
+            test_result = shuffle_test(
+                X_predictor,
+                Y,
+                Z_cond,
+                cmi,
+                alpha=alpha,
+                rng=rng,
+                n_shuffles=n_shuffles,
+                information=information,
+                reuse_gaussian_context=(information == "gaussian"),
+            )
+            graph.add_edge(
+                f"X{source}",
+                f"X{target}",
+                lag=lag,
+                cmi=cmi,
+                p_value=test_result["P_value"],
+            )
+
+    return graph, time.perf_counter() - start_total, support_by_target
+
+
 def run_path_b_v2(
     data,
     information,
@@ -102,6 +174,8 @@ def run_path_b_v2(
     endpoint_total = 0
     rescued_total = 0
     screen_seconds = 0.0
+    screen_by_target = {}
+    support_by_target = {}
     start_total = time.perf_counter()
 
     for target in range(n_nodes):
@@ -120,8 +194,10 @@ def run_path_b_v2(
         screened_total += len(screened)
         endpoint_total += diag["endpoint_size"]
         rescued_total += diag["rescued"]
+        screen_by_target[target] = set(int(idx) for idx in screened)
 
         if not screened:
+            support_by_target[target] = set()
             continue
 
         Z_init = np.column_stack(
@@ -141,6 +217,9 @@ def run_path_b_v2(
             information=information,
             reuse_gaussian_context=(information == "gaussian"),
         )
+        support_by_target[target] = {
+            int(screened[int(local_idx)]) for local_idx in refined_local
+        }
         for local_idx in refined_local:
             global_idx = screened[int(local_idx)]
             source, lag = feature_names[global_idx]
@@ -187,6 +266,8 @@ def run_path_b_v2(
         "rescued_candidates": rescued_total,
         "screened_candidates": screened_total,
         "total_candidates": total_candidates,
+        "screen_by_target": screen_by_target,
+        "support_by_target": support_by_target,
     }
 
 
@@ -252,8 +333,20 @@ def run_case(
         }
     }
 
-    full_graph = None
-    for method in ("standard", "lasso", "information_lasso"):
+    full_graph, full_runtime, full_support_by_target = run_full_standard_matched(
+        data,
+        information,
+        max_lag,
+        alpha,
+        n_shuffles,
+        seed,
+    )
+    result["standard"] = {
+        **metrics(truth, edge_set(full_graph), n_nodes, max_lag),
+        "runtime_seconds": full_runtime,
+    }
+
+    for method in ("lasso", "information_lasso"):
         graph, runtime = run_discover(
             data,
             method,
@@ -268,8 +361,6 @@ def run_case(
             **metrics(truth, edge_set(graph), n_nodes, max_lag),
             "runtime_seconds": runtime,
         }
-        if method == "standard":
-            full_graph = graph
 
     graph_b, diagnostics = run_path_b_v2(
         data,
@@ -281,9 +372,34 @@ def run_case(
         seed,
         n_jobs,
     )
+    screen_by_target = diagnostics.pop("screen_by_target")
+    path_b_support_by_target = diagnostics.pop("support_by_target")
+    full_support_total = sum(len(support) for support in full_support_by_target.values())
+    full_support_screened = sum(
+        len(full_support_by_target[target] & screen_by_target.get(target, set()))
+        for target in full_support_by_target
+    )
+    full_support_refined = sum(
+        len(
+            full_support_by_target[target]
+            & path_b_support_by_target.get(target, set())
+        )
+        for target in full_support_by_target
+    )
+
     result["path_b_v2"] = {
         **metrics(truth, edge_set(graph_b), n_nodes, max_lag),
         **diagnostics,
+        "screen_full_support_recall": (
+            full_support_screened / full_support_total
+            if full_support_total
+            else 1.0
+        ),
+        "refined_full_support_recall": (
+            full_support_refined / full_support_total
+            if full_support_total
+            else 1.0
+        ),
     }
 
     full_edges = edge_set(full_graph)
