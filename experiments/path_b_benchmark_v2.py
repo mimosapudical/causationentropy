@@ -16,7 +16,13 @@ import networkx as nx
 import numpy as np
 
 from causationentropy import discover_network
-from causationentropy.core.discovery import standard_optimal_causation_entropy
+from causationentropy.core.discovery import (
+    shuffle_test,
+    standard_optimal_causation_entropy,
+)
+from causationentropy.core.information.conditional_mutual_information import (
+    conditional_mutual_information,
+)
 from causationentropy.datasets.synthetic import (
     linear_stochastic_gaussian_process,
     logisic_dynamics,
@@ -138,7 +144,37 @@ def run_path_b_v2(
         for local_idx in refined_local:
             global_idx = screened[int(local_idx)]
             source, lag = feature_names[global_idx]
-            graph.add_edge(f"X{source}", f"X{target}", lag=lag)
+
+            # Match discover_network's output-stage work so runtime comparisons
+            # do not favor Path B by omitting final edge CMI/p-value reporting.
+            other_local = [idx for idx in refined_local if idx != local_idx]
+            other_global = [screened[int(idx)] for idx in other_local]
+            Z_cond = X[:, other_global] if other_global else None
+            X_predictor = X[:, [global_idx]]
+            cmi = conditional_mutual_information(
+                X_predictor,
+                Y,
+                Z_cond,
+                method=information,
+            )
+            test_result = shuffle_test(
+                X_predictor,
+                Y,
+                Z_cond,
+                cmi,
+                alpha=alpha,
+                rng=rng,
+                n_shuffles=n_shuffles,
+                information=information,
+                reuse_gaussian_context=(information == "gaussian"),
+            )
+            graph.add_edge(
+                f"X{source}",
+                f"X{target}",
+                lag=lag,
+                cmi=cmi,
+                p_value=test_result["P_value"],
+            )
 
     total_seconds = time.perf_counter() - start_total
     total_candidates = n_nodes * X.shape[1]
