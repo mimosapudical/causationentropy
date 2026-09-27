@@ -28,12 +28,11 @@ def _candidate_cmi_values(
     metric,
     k_means,
     bandwidth,
-    reuse_gaussian_context=False,
 ):
     """Score candidates once for a fixed conditioning set, preserving input order."""
     gaussian_context = (
         prepare_gaussian_cmi_context(Y, Z)
-        if reuse_gaussian_context and information == "gaussian" and Z is not None
+        if information == "gaussian" and Z is not None
         else None
     )
 
@@ -71,7 +70,6 @@ def discover_network(
     n_jobs=-1,
     random_state: Union[int, np.random.Generator, None] = 42,
     only_return_significant: bool = True,
-    reuse_gaussian_context: bool = False,
 ) -> nx.MultiDiGraph:
     r"""
     Infer a causal graph via Optimal Causation Entropy (oCSE).
@@ -275,7 +273,6 @@ def discover_network(
                 metric,
                 k_means,
                 bandwidth,
-            reuse_gaussian_context=reuse_gaussian_context,
             )
         if method == "alternative":
             S = alternative_optimal_causation_entropy(
@@ -289,7 +286,6 @@ def discover_network(
                 metric,
                 k_means,
                 bandwidth,
-            reuse_gaussian_context=reuse_gaussian_context,
             )
         if method == "information_lasso":
             S = information_lasso_optimal_causation_entropy(
@@ -338,7 +334,6 @@ def discover_network(
                 metric=metric,
                 k_means=k_means,
                 bandwidth=bandwidth,
-                reuse_gaussian_context=reuse_gaussian_context,
             )
 
             if only_return_significant:
@@ -395,8 +390,7 @@ def discover_network(
                     metric=metric,
                     k_means=k_means,
                     bandwidth=bandwidth,
-                    reuse_gaussian_context=reuse_gaussian_context,
-                )
+                    )
 
                 G.add_edge(
                     var_names[src_var],
@@ -474,7 +468,6 @@ def standard_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
-        reuse_gaussian_context=reuse_gaussian_context,
     )
 
     S = backward(
@@ -488,7 +481,6 @@ def standard_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
-        reuse_gaussian_context=reuse_gaussian_context,
     )
 
     return S
@@ -547,7 +539,6 @@ def alternative_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
-        reuse_gaussian_context=reuse_gaussian_context,
     )
 
     S = backward(
@@ -561,7 +552,6 @@ def alternative_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
-        reuse_gaussian_context=reuse_gaussian_context,
     )
 
     return S
@@ -815,7 +805,6 @@ def alternative_forward(
             metric,
             k_means,
             bandwidth,
-            reuse_gaussian_context=reuse_gaussian_context,
         )
 
         # 2. pick best
@@ -836,7 +825,6 @@ def alternative_forward(
             metric=metric,
             k_means=k_means,
             bandwidth=bandwidth,
-            reuse_gaussian_context=reuse_gaussian_context,
         )["Pass"]
         if not passed:
             break
@@ -924,7 +912,6 @@ def standard_forward(
             metric,
             k_means,
             bandwidth,
-            reuse_gaussian_context=reuse_gaussian_context,
         )
 
         # Replay the original repeated-argmax logic without recomputing scores.
@@ -952,7 +939,6 @@ def standard_forward(
                 metric=metric,
                 k_means=k_means,
                 bandwidth=bandwidth,
-                reuse_gaussian_context=reuse_gaussian_context,
             )["Pass"]
 
             if passed:
@@ -1079,7 +1065,6 @@ def backward(
             metric=metric,
             k_means=k_means,
             bandwidth=bandwidth,
-            reuse_gaussian_context=reuse_gaussian_context,
         )["Pass"]
         if not passed:
             S.remove(j)  # prune j
@@ -1182,7 +1167,7 @@ def shuffle_test(
     null_cmi = np.empty(n_shuffles)
     gaussian_context = (
         prepare_gaussian_cmi_context(Y, Z)
-        if reuse_gaussian_context and information == "gaussian" and Z is not None
+        if information == "gaussian" and Z is not None
         else None
     )
 
