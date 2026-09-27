@@ -338,6 +338,7 @@ def discover_network(
                 metric=metric,
                 k_means=k_means,
                 bandwidth=bandwidth,
+                reuse_gaussian_context=reuse_gaussian_context,
             )
 
             if only_return_significant:
@@ -394,6 +395,7 @@ def discover_network(
                     metric=metric,
                     k_means=k_means,
                     bandwidth=bandwidth,
+                    reuse_gaussian_context=reuse_gaussian_context,
                 )
 
                 G.add_edge(
