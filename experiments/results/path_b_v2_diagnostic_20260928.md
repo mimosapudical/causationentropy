@@ -229,3 +229,92 @@ Still not verified:
 - final high-dimensional scaling benchmark with a fixed compute environment.
 
 Do not describe Path B as upstream-ready or paper-final until those checks pass.
+
+
+## Update: forward-closure preservation is the stronger target
+
+A later diagnostic separated final-parent coverage from preservation of the
+full oCSE selection path.
+
+Full oCSE can accept predictors during forward selection that are later removed
+by backward elimination. These temporary predictors can act as conditioning
+witnesses. Therefore, preserving only the final parent set is not in general
+the right screening target for a restricted oCSE run.
+
+The stronger diagnostic target is the **full forward closure**:
+
+```
+C_forward = predictors accepted by full oCSE forward selection
+```
+
+The Path-B screen should aim for:
+
+```
+C_forward ⊆ C_screen
+```
+
+rather than only:
+
+```
+C_final ⊆ C_screen
+```
+
+### Common-random-number (CRN) diagnostic
+
+Candidate restriction changes how many shuffle tests are executed. With one
+shared sequential RNG, this also changes which random permutations later tests
+receive, even when the same candidate and conditioning set are tested. That
+confounds algorithmic path differences with RNG-stream differences.
+
+The new `experiments/path_b_common_random_numbers.py` diagnostic keys the
+permutation RNG to:
+
+```
+(base seed, target, stage, candidate, conditioning set)
+```
+
+so full and restricted oCSE receive identical null permutations for identical
+tests.
+
+In the independent local reference runner at N=20, T=350, 3 seeds, 20 shuffles:
+
+| Target retention | Mean actual retention | Mean forward-closure recall | Final-support screen recall | Restricted final recall (CRN) |
+|---:|---:|---:|---:|---:|
+| 20% | ~22.7% | ~87.8% | ~95.6% | ~93.8% |
+| 30% | ~31.4% | ~94.9% | ~98.8% | ~97.5% |
+| **40%** | **~40.8%** | **~98.5%** | **100%** | **100%** |
+| 50% | ~50.5% | ~99.0% | 100% | 100% |
+
+A larger N=30, T=350, one-seed smoke at 40% retention gave:
+
+- actual retention: ~40.0%
+- forward-closure recall: ~99.30%
+- final-support screen recall: 100%
+- restricted final recall under CRN: 100%
+
+These numbers are still diagnostic, not paper-ready benchmark claims.
+
+### Revised working hypothesis
+
+The paper-level sufficient-condition story should now be framed around
+**selection-path preservation**:
+
+1. the screen retains the full forward closure with high probability;
+2. identical shared tests use coupled/common random numbers (or enough
+   permutations that Monte Carlo noise is negligible);
+3. restricted forward selection therefore reproduces the accepted full-oCSE
+   path;
+4. backward elimination then receives the same accepted set and reproduces the
+   same final graph.
+
+This is stronger and more oCSE-specific than generic final-parent sure
+screening.
+
+### Revised default operating point
+
+The v2 benchmark default is now 40% candidate retention, not 30%.
+
+The 30% point is still useful on the accuracy/compute frontier, but 40% is the
+current conservative point because the independent diagnostic showed exact
+restricted-final reproduction under CRN across the tested N=20 seeds and the
+N=30 smoke.
