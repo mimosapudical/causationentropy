@@ -9,6 +9,8 @@ compares it against full standard oCSE, ordinary LASSO, and Path A.
 """
 
 import argparse
+import contextlib
+import io
 import json
 import time
 
@@ -68,17 +70,21 @@ def metrics(truth, predicted, n_nodes, max_lag):
 
 def run_discover(data, method, information, max_lag, alpha, n_shuffles, seed, n_jobs):
     start = time.perf_counter()
-    graph = discover_network(
-        data=data,
-        method=method,
-        information=information,
-        max_lag=max_lag,
-        alpha_forward=alpha,
-        alpha_backward=alpha,
-        n_shuffles=n_shuffles,
-        random_state=seed,
-        n_jobs=n_jobs,
-    )
+    # discover_network prints one progress line per target. Suppress it here so
+    # redirected benchmark output remains valid JSON.
+    with contextlib.redirect_stdout(io.StringIO()):
+        graph = discover_network(
+            data=data,
+            method=method,
+            information=information,
+            max_lag=max_lag,
+            alpha_forward=alpha,
+            alpha_backward=alpha,
+            n_shuffles=n_shuffles,
+            random_state=seed,
+            n_jobs=n_jobs,
+            reuse_gaussian_context=(information == "gaussian"),
+        )
     return graph, time.perf_counter() - start
 
 
@@ -116,7 +122,8 @@ def run_full_standard_matched(
             alpha2=alpha,
             n_shuffles=n_shuffles,
             information=information,
-            )
+            reuse_gaussian_context=(information == "gaussian"),
+        )
         support = [int(idx) for idx in support]
         support_by_target[target] = set(support)
 
@@ -140,7 +147,8 @@ def run_full_standard_matched(
                 rng=rng,
                 n_shuffles=n_shuffles,
                 information=information,
-                    )
+                reuse_gaussian_context=(information == "gaussian"),
+            )
             graph.add_edge(
                 f"X{source}",
                 f"X{target}",
@@ -212,7 +220,8 @@ def run_path_b_v2(
             alpha2=alpha,
             n_shuffles=n_shuffles,
             information=information,
-            )
+            reuse_gaussian_context=(information == "gaussian"),
+        )
         support_by_target[target] = {
             int(screened[int(local_idx)]) for local_idx in refined_local
         }
@@ -241,7 +250,8 @@ def run_path_b_v2(
                 rng=rng,
                 n_shuffles=n_shuffles,
                 information=information,
-                    )
+                reuse_gaussian_context=(information == "gaussian"),
+            )
             graph.add_edge(
                 f"X{source}",
                 f"X{target}",
