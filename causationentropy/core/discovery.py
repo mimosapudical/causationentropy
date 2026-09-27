@@ -464,7 +464,17 @@ def standard_optimal_causation_entropy(
     """
 
     forward_pass = standard_forward(
-        X, Y, Z_init, rng, alpha1, n_shuffles, information, metric, k_means, bandwidth
+        X,
+        Y,
+        Z_init,
+        rng,
+        alpha1,
+        n_shuffles,
+        information,
+        metric,
+        k_means,
+        bandwidth,
+        n_jobs=n_jobs,
     )
 
     S = backward(
@@ -527,7 +537,16 @@ def alternative_optimal_causation_entropy(
     """
 
     forward_pass = alternative_forward(
-        X, Y, rng, alpha1, n_shuffles, information, metric, k_means, bandwidth
+        X,
+        Y,
+        rng,
+        alpha1,
+        n_shuffles,
+        information,
+        metric,
+        k_means,
+        bandwidth,
+        n_jobs=n_jobs,
     )
 
     S = backward(
