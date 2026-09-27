@@ -24,8 +24,9 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import lars_path
 
 from causationentropy.core.discovery import (
+    backward,
     information_lasso_optimal_causation_entropy,
-    standard_optimal_causation_entropy,
+    standard_forward,
 )
 from causationentropy.core.information.conditional_mutual_information import (
     conditional_mutual_information,
@@ -104,7 +105,7 @@ def endpoint_plus_conditional_rescue(
     X,
     Y,
     rng,
-    retention=0.30,
+    retention=0.40,
     min_rescue=1,
     information="gaussian",
     metric="euclidean",
@@ -159,7 +160,7 @@ def endpoint_plus_conditional_rescue(
     }
 
 
-def exact_standard_support(
+def exact_standard_sets(
     X,
     Y,
     Z_init,
@@ -168,19 +169,28 @@ def exact_standard_support(
     n_shuffles=100,
     information="gaussian",
 ):
-    return set(
-        int(j)
-        for j in standard_optimal_causation_entropy(
-            X,
-            Y,
-            Z_init,
-            rng,
-            alpha1=alpha,
-            alpha2=alpha,
-            n_shuffles=n_shuffles,
-            information=information,
-        )
+    """Return both the full forward closure and final backward-pruned support."""
+    forward = standard_forward(
+        X,
+        Y,
+        Z_init,
+        rng,
+        alpha=alpha,
+        n_shuffles=n_shuffles,
+        information=information,
+        reuse_gaussian_context=(information == "gaussian"),
     )
+    final = backward(
+        X,
+        Y,
+        forward,
+        rng,
+        alpha=alpha,
+        n_shuffles=n_shuffles,
+        information=information,
+        reuse_gaussian_context=(information == "gaussian"),
+    )
+    return set(int(j) for j in forward), set(int(j) for j in final)
 
 
 def _coverage(reference, selected):
@@ -215,7 +225,7 @@ def run_gaussian_frontier(
             Y = Y_all[:, [target]]
             Z_init = series[:-1, [target]]
             rng_full = np.random.default_rng(seed * 10000 + target)
-            full = exact_standard_support(
+            full_forward, full_final = exact_standard_sets(
                 X, Y, Z_init, rng_full, n_shuffles=n_shuffles
             )
 
@@ -233,7 +243,8 @@ def run_gaussian_frontier(
                     "target": target,
                     "screen": "endpoint",
                     "retention": len(endpoint) / X.shape[1],
-                    "full_support_recall": _coverage(full, endpoint),
+                    "full_forward_recall": _coverage(full_forward, endpoint),
+                    "full_support_recall": _coverage(full_final, endpoint),
                 }
             )
 
@@ -246,7 +257,8 @@ def run_gaussian_frontier(
                         "target": target,
                         "screen": f"path_{retention:.2f}",
                         "retention": len(path_selected) / X.shape[1],
-                        "full_support_recall": _coverage(full, path_selected),
+                        "full_forward_recall": _coverage(full_forward, path_selected),
+                        "full_support_recall": _coverage(full_final, path_selected),
                     }
                 )
 
@@ -261,7 +273,8 @@ def run_gaussian_frontier(
                         "target": target,
                         "screen": f"rescue_{retention:.2f}",
                         "retention": len(rescued) / X.shape[1],
-                        "full_support_recall": _coverage(full, rescued),
+                        "full_forward_recall": _coverage(full_forward, rescued),
+                        "full_support_recall": _coverage(full_final, rescued),
                     }
                 )
 
@@ -270,6 +283,9 @@ def run_gaussian_frontier(
         subset = [row for row in rows if row["screen"] == name]
         summary[name] = {
             "mean_retention": float(np.mean([row["retention"] for row in subset])),
+            "mean_full_forward_recall": float(
+                np.mean([row["full_forward_recall"] for row in subset])
+            ),
             "mean_full_support_recall": float(
                 np.mean([row["full_support_recall"] for row in subset])
             ),
