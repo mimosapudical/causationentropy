@@ -43,7 +43,6 @@ def test_standard_forward_reuses_observed_scores_when_z_is_unchanged():
             Z,
             np.random.default_rng(0),
             n_shuffles=3,
-            n_jobs=1,
         )
 
     assert selected == [1]
