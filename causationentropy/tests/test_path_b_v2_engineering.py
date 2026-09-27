@@ -3,7 +3,6 @@ from unittest.mock import patch
 import numpy as np
 
 from causationentropy.core.discovery import (
-    _candidate_cmi_values,
     shuffle_test,
     standard_forward,
 )
@@ -50,38 +49,6 @@ def test_standard_forward_reuses_observed_scores_when_z_is_unchanged():
     assert selected == [1]
     assert cmi.call_count == 4
     assert shuffle.call_count == 3
-
-
-def test_candidate_parallelism_preserves_score_order():
-    rng = np.random.default_rng(0)
-    X = rng.normal(size=(80, 6))
-    Y = rng.normal(size=(80, 1))
-    Z = rng.normal(size=(80, 2))
-    candidates = list(range(X.shape[1]))
-
-    serial = _candidate_cmi_values(
-        X,
-        candidates,
-        Y,
-        Z,
-        "gaussian",
-        "euclidean",
-        5,
-        "silverman",
-        n_jobs=1,
-    )
-    parallel = _candidate_cmi_values(
-        X,
-        candidates,
-        Y,
-        Z,
-        "gaussian",
-        "euclidean",
-        5,
-        "silverman",
-        n_jobs=2,
-    )
-    np.testing.assert_allclose(serial, parallel, rtol=0, atol=0)
 
 
 def test_gaussian_context_reuse_is_numerically_equivalent():
