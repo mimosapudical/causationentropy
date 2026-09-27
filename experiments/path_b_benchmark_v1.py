@@ -188,7 +188,7 @@ def run_benchmark(
     graph_true = nx.erdos_renyi_graph(
         n_nodes, edge_probability, seed=seed, directed=True
     )
-    data, adjacency = linear_stochastic_gaussian_process(
+    data, _ = linear_stochastic_gaussian_process(
         rho=rho,
         n=n_nodes,
         T=T,
@@ -196,7 +196,7 @@ def run_benchmark(
         seed=seed,
         G=graph_true,
     )
-    truth = _truth_edge_set(adjacency)
+    truth = {(int(src), int(dst), 1) for src, dst in graph_true.edges()}
 
     result = {
         "config": {
