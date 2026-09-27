@@ -5,6 +5,8 @@ version = 1.1.0
 """
 
 import copy
+import os
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Tuple, Union
 
 import networkx as nx
@@ -15,6 +17,47 @@ from sklearn.linear_model import Lasso, LassoCV, LassoLarsIC
 from causationentropy.core.information.conditional_mutual_information import (
     conditional_mutual_information,
 )
+
+
+def _resolved_n_jobs(n_jobs):
+    """Resolve user-facing n_jobs while keeping result ordering deterministic."""
+    if n_jobs in (None, 0, 1):
+        return 1
+    if n_jobs < 0:
+        return max(1, os.cpu_count() or 1)
+    return int(n_jobs)
+
+
+def _candidate_cmi_values(
+    X_full,
+    candidates,
+    Y,
+    Z,
+    information,
+    metric,
+    k_means,
+    bandwidth,
+    n_jobs=1,
+):
+    """Score independent candidate-CMI calls in parallel, preserving input order."""
+
+    def score(j):
+        return conditional_mutual_information(
+            X_full[:, [j]],
+            Y,
+            Z,
+            method=information,
+            metric=metric,
+            k=k_means,
+            bandwidth=bandwidth,
+        )
+
+    workers = _resolved_n_jobs(n_jobs)
+    if workers == 1 or len(candidates) <= 1:
+        return np.asarray([score(j) for j in candidates], dtype=float)
+
+    with ThreadPoolExecutor(max_workers=min(workers, len(candidates))) as pool:
+        return np.fromiter(pool.map(score, candidates), dtype=float, count=len(candidates))
 
 
 def discover_network(
@@ -234,6 +277,7 @@ def discover_network(
                 metric,
                 k_means,
                 bandwidth,
+                n_jobs=n_jobs,
             )
         if method == "alternative":
             S = alternative_optimal_causation_entropy(
@@ -247,6 +291,7 @@ def discover_network(
                 metric,
                 k_means,
                 bandwidth,
+                n_jobs=n_jobs,
             )
         if method == "information_lasso":
             S = information_lasso_optimal_causation_entropy(
@@ -377,6 +422,7 @@ def standard_optimal_causation_entropy(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
+    n_jobs=1,
 ):
     r"""
     Execute the standard optimal Causation Entropy algorithm with initial conditioning set.
@@ -448,6 +494,7 @@ def alternative_optimal_causation_entropy(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
+    n_jobs=1,
 ):
     """
     Execute the alternative optimal Causation Entropy algorithm without initial conditioning.
@@ -683,6 +730,7 @@ def alternative_forward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
+    n_jobs=1,
 ):
     r"""
     Forward selection phase of oCSE without initial conditioning set.
@@ -737,18 +785,17 @@ def alternative_forward(
             break
 
         # 1. evaluate each remaining variable
-        ent_values = np.zeros(remaining.size)
-        for k, j in enumerate(remaining):
-            Xj = X_full[:, [j]]  # keep 2-D shape
-            ent_values[k] = conditional_mutual_information(
-                Xj,
-                Y,
-                Z,
-                method=information,
-                metric=metric,
-                k=k_means,
-                bandwidth=bandwidth,
-            )
+        ent_values = _candidate_cmi_values(
+            X_full,
+            remaining.tolist(),
+            Y,
+            Z,
+            information,
+            metric,
+            k_means,
+            bandwidth,
+            n_jobs=n_jobs,
+        )
 
         # 2. pick best
         j_best = remaining[ent_values.argmax()]
@@ -790,6 +837,7 @@ def standard_forward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
+    n_jobs=1,
 ):
     r"""
     Standard forward selection phase of oCSE with initial conditioning set.
@@ -842,49 +890,61 @@ def standard_forward(
     Z = Z_init.copy() if Z_init is not None else None
 
     while candidates:
-        # 1. compute CMI for every remaining candidate
-        ent_values = np.empty(len(candidates))
-        for k, j in enumerate(candidates):
-            Xj = X_full[:, [j]]  # (T,1)  keep 2‑D
-            ent_values[k] = conditional_mutual_information(
-                Xj,
-                Y,
-                Z,
-                method=information,
-                metric=metric,
-                k=k_means,
-                bandwidth=bandwidth,
-            )
-
-        # 2. take the arg‑max
-        k_best = int(ent_values.argmax())
-        j_best = candidates[k_best]
-        X_best = X_full[:, [j_best]]
-        mi_best = ent_values[k_best]
-
-        # 3. permutation (shuffle) test
-        passed = shuffle_test(
-            X_best,
+        # Compute each observed CMI once for the current conditioning set.
+        # If a candidate fails its shuffle test, Z is unchanged, so recomputing
+        # every remaining observed CMI is redundant.
+        ent_values = _candidate_cmi_values(
+            X_full,
+            candidates,
             Y,
             Z,
-            mi_best,
-            alpha=alpha,
-            rng=rng,
-            n_shuffles=n_shuffles,
-            information=information,
-            metric=metric,
-            k_means=k_means,
-            bandwidth=bandwidth,
-        )["Pass"]
+            information,
+            metric,
+            k_means,
+            bandwidth,
+            n_jobs=n_jobs,
+        )
 
-        if not passed:
-            candidates.pop(k_best)
-            continue
+        # Stable descending order matches repeated argmax + removal, including ties.
+        score_order = np.argsort(-ent_values, kind="stable")
+        failed = []
+        accepted = None
 
-        # 4. accept predictor, update conditioning set / candidate list
-        S.append(j_best)
+        for k_best in score_order:
+            j_best = candidates[int(k_best)]
+            X_best = X_full[:, [j_best]]
+            mi_best = ent_values[int(k_best)]
+
+            passed = shuffle_test(
+                X_best,
+                Y,
+                Z,
+                mi_best,
+                alpha=alpha,
+                rng=rng,
+                n_shuffles=n_shuffles,
+                information=information,
+                metric=metric,
+                k_means=k_means,
+                bandwidth=bandwidth,
+            )["Pass"]
+
+            if passed:
+                accepted = j_best
+                break
+            failed.append(j_best)
+
+        if failed:
+            failed_set = set(failed)
+            candidates = [j for j in candidates if j not in failed_set]
+
+        if accepted is None:
+            break
+
+        S.append(accepted)
+        X_best = X_full[:, [accepted]]
         Z = np.hstack([Z, X_best]) if Z is not None else X_best
-        candidates.pop(k_best)
+        candidates.remove(accepted)
 
     return S
 
