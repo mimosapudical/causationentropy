@@ -46,6 +46,7 @@ def main():
         row = summary[key]
         print(
             f"| {key} | {fmt(row['mean_retention'])} | "
+            f"{fmt(row['mean_full_forward_recall'])} | "
             f"{fmt(row['mean_full_support_recall'])} |"
         )
 
