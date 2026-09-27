@@ -46,8 +46,13 @@ candidate space at the 30% target.
 A parent was constructed to have weak/near-zero marginal information but strong
 conditional relevance. Across the diagnostic seeds:
 
-- Path-A endpoint parent recall: ~87%
-- endpoint + minimum conditional rescue: 100%
+- Earlier diagnostic Path-A endpoint parent recall: ~87%
+- Independent final smoke rerun of the same failure mode: ~92%
+- endpoint + minimum conditional rescue: 100% in both checks
+
+The exact endpoint percentage is therefore not treated as a paper result yet;
+the robust observation is that the endpoint can miss hidden parents while the
+single rescue pass recovered them in these diagnostics.
 
 This directly tests the failure mode motivating conditional screening.
 
@@ -73,8 +78,8 @@ This is why v2 does **not** add a separate lag-group mechanism yet.
    recomputed.
 
 A standalone local numerical check over 200 shuffled candidates showed identical
-Gaussian CMI values (max absolute difference 0) and about 1.54× speedup for that
-inner calculation. This is not a full-pipeline speedup claim.
+Gaussian CMI values (max absolute difference 0) and roughly 1.5–1.8× speedup for that
+inner calculation across local smoke runs. This is not a full-pipeline speedup claim.
 
 ## Explicitly excluded as duplicate/out of scope
 
