@@ -416,7 +416,6 @@ def standard_optimal_causation_entropy(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    reuse_gaussian_context=False,
 ):
     r"""
     Execute the standard optimal Causation Entropy algorithm with initial conditioning set.
@@ -497,7 +496,6 @@ def alternative_optimal_causation_entropy(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    reuse_gaussian_context=False,
 ):
     """
     Execute the alternative optimal Causation Entropy algorithm without initial conditioning.
@@ -741,7 +739,6 @@ def alternative_forward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    reuse_gaussian_context=False,
 ):
     r"""
     Forward selection phase of oCSE without initial conditioning set.
@@ -847,7 +844,6 @@ def standard_forward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    reuse_gaussian_context=False,
 ):
     r"""
     Standard forward selection phase of oCSE with initial conditioning set.
@@ -975,7 +971,6 @@ def backward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    reuse_gaussian_context=False,
 ):
     r"""
     Backward elimination phase of optimal Causation Entropy.
@@ -1035,7 +1030,7 @@ def backward(
         Xj = X_full[:, [j]]
         gaussian_context = (
             prepare_gaussian_cmi_context(Y, Z)
-            if reuse_gaussian_context and information == "gaussian" and Z is not None
+            if information == "gaussian" and Z is not None
             else None
         )
         if gaussian_context is not None:
@@ -1084,7 +1079,6 @@ def shuffle_test(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    reuse_gaussian_context=False,
 ):
     r"""
     Permutation test for conditional mutual information significance.
