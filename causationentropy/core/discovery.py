@@ -5,8 +5,6 @@ version = 1.1.0
 """
 
 import copy
-import os
-from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Tuple, Union
 
 import networkx as nx
@@ -21,15 +19,6 @@ from causationentropy.core.information.conditional_mutual_information import (
 )
 
 
-def _resolved_n_jobs(n_jobs):
-    """Resolve user-facing n_jobs while keeping result ordering deterministic."""
-    if n_jobs in (None, 0, 1):
-        return 1
-    if n_jobs < 0:
-        return max(1, os.cpu_count() or 1)
-    return int(n_jobs)
-
-
 def _candidate_cmi_values(
     X_full,
     candidates,
@@ -39,38 +28,33 @@ def _candidate_cmi_values(
     metric,
     k_means,
     bandwidth,
-    n_jobs=1,
     reuse_gaussian_context=False,
 ):
-    """Score independent candidate-CMI calls in parallel, preserving input order."""
-
+    """Score candidates once for a fixed conditioning set, preserving input order."""
     gaussian_context = (
         prepare_gaussian_cmi_context(Y, Z)
         if reuse_gaussian_context and information == "gaussian" and Z is not None
         else None
     )
 
-    def score(j):
+    values = []
+    for j in candidates:
         if gaussian_context is not None:
-            return gaussian_conditional_mutual_information(
+            value = gaussian_conditional_mutual_information(
                 X_full[:, [j]], Y, Z, context=gaussian_context
             )
-        return conditional_mutual_information(
-            X_full[:, [j]],
-            Y,
-            Z,
-            method=information,
-            metric=metric,
-            k=k_means,
-            bandwidth=bandwidth,
-        )
-
-    workers = _resolved_n_jobs(n_jobs)
-    if workers == 1 or len(candidates) <= 1:
-        return np.asarray([score(j) for j in candidates], dtype=float)
-
-    with ThreadPoolExecutor(max_workers=min(workers, len(candidates))) as pool:
-        return np.fromiter(pool.map(score, candidates), dtype=float, count=len(candidates))
+        else:
+            value = conditional_mutual_information(
+                X_full[:, [j]],
+                Y,
+                Z,
+                method=information,
+                metric=metric,
+                k=k_means,
+                bandwidth=bandwidth,
+            )
+        values.append(value)
+    return np.asarray(values, dtype=float)
 
 
 def discover_network(
@@ -291,7 +275,6 @@ def discover_network(
                 metric,
                 k_means,
                 bandwidth,
-                n_jobs=n_jobs,
                 reuse_gaussian_context=reuse_gaussian_context,
             )
         if method == "alternative":
@@ -306,7 +289,6 @@ def discover_network(
                 metric,
                 k_means,
                 bandwidth,
-                n_jobs=n_jobs,
                 reuse_gaussian_context=reuse_gaussian_context,
             )
         if method == "information_lasso":
@@ -438,7 +420,6 @@ def standard_optimal_causation_entropy(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    n_jobs=1,
     reuse_gaussian_context=False,
 ):
     r"""
@@ -491,7 +472,6 @@ def standard_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
-        n_jobs=n_jobs,
         reuse_gaussian_context=reuse_gaussian_context,
     )
 
@@ -523,7 +503,6 @@ def alternative_optimal_causation_entropy(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    n_jobs=1,
     reuse_gaussian_context=False,
 ):
     """
@@ -566,7 +545,6 @@ def alternative_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
-        n_jobs=n_jobs,
         reuse_gaussian_context=reuse_gaussian_context,
     )
 
@@ -771,7 +749,6 @@ def alternative_forward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    n_jobs=1,
     reuse_gaussian_context=False,
 ):
     r"""
@@ -836,8 +813,7 @@ def alternative_forward(
             metric,
             k_means,
             bandwidth,
-            n_jobs=n_jobs,
-            reuse_gaussian_context=reuse_gaussian_context,
+                reuse_gaussian_context=reuse_gaussian_context,
         )
 
         # 2. pick best
@@ -881,7 +857,6 @@ def standard_forward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
-    n_jobs=1,
     reuse_gaussian_context=False,
 ):
     r"""
@@ -947,8 +922,7 @@ def standard_forward(
             metric,
             k_means,
             bandwidth,
-            n_jobs=n_jobs,
-            reuse_gaussian_context=reuse_gaussian_context,
+                reuse_gaussian_context=reuse_gaussian_context,
         )
 
         # Replay the original repeated-argmax logic without recomputing scores.
