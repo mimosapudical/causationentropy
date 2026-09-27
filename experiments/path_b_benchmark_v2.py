@@ -72,6 +72,7 @@ def run_discover(data, method, information, max_lag, alpha, n_shuffles, seed, n_
         n_shuffles=n_shuffles,
         random_state=seed,
         n_jobs=n_jobs,
+        reuse_gaussian_context=(information == "gaussian"),
     )
     return graph, time.perf_counter() - start
 
@@ -133,6 +134,7 @@ def run_path_b_v2(
             n_shuffles=n_shuffles,
             information=information,
             n_jobs=n_jobs,
+            reuse_gaussian_context=(information == "gaussian"),
         )
         for local_idx in refined_local:
             global_idx = screened[int(local_idx)]
@@ -215,6 +217,7 @@ def run_case(
         }
     }
 
+    full_graph = None
     for method in ("standard", "lasso", "information_lasso"):
         graph, runtime = run_discover(
             data,
@@ -230,6 +233,8 @@ def run_case(
             **metrics(truth, edge_set(graph), n_nodes, max_lag),
             "runtime_seconds": runtime,
         }
+        if method == "standard":
+            full_graph = graph
 
     graph_b, diagnostics = run_path_b_v2(
         data,
@@ -246,18 +251,7 @@ def run_case(
         **diagnostics,
     }
 
-    full_edges = edge_set(
-        run_discover(
-            data,
-            "standard",
-            information,
-            max_lag,
-            alpha,
-            n_shuffles,
-            seed,
-            n_jobs,
-        )[0]
-    )
+    full_edges = edge_set(full_graph)
     path_b_edges = edge_set(graph_b)
     result["path_b_v2"]["full_ocse_edge_recall"] = (
         len(full_edges & path_b_edges) / len(full_edges) if full_edges else 1.0
