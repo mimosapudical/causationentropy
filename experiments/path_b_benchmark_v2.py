@@ -357,7 +357,7 @@ def poisson_case(seed, n_nodes=8, T=250, p=0.15):
 def run_case(
     case,
     seed=0,
-    retention=0.30,
+    retention=0.40,
     max_lag=1,
     alpha=0.05,
     n_shuffles=100,
@@ -473,7 +473,7 @@ def main():
         default="gaussian",
     )
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--retention", type=float, default=0.30)
+    parser.add_argument("--retention", type=float, default=0.40)
     parser.add_argument("--n-shuffles", type=int, default=100)
     parser.add_argument("--n-jobs", type=int, default=1)
     args = parser.parse_args()
