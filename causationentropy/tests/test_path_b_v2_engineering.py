@@ -11,6 +11,7 @@ from causationentropy.core.information.conditional_mutual_information import (
     gaussian_conditional_mutual_information,
     prepare_gaussian_cmi_context,
 )
+from experiments.path_b_benchmark_v2 import logistic_case
 from experiments.path_b_screen_frontier_v2 import (
     endpoint_plus_conditional_rescue,
 )
@@ -130,3 +131,19 @@ def test_conditional_rescue_adds_best_excluded_candidate():
 
     assert selected == [0, 1]
     assert diagnostics == {"endpoint_size": 1, "rescued": 1}
+
+
+def test_logistic_benchmark_case_is_finite_and_bounded():
+    data, truth, information, metadata = logistic_case(seed=0)
+
+    assert information == "kde"
+    assert metadata["benchmark_role"] == "primary"
+    assert metadata["generator"] == "logisic_dynamics"
+    assert metadata["r"] == 3.9
+    assert metadata["sigma"] == 0.01
+    assert metadata["finite"] is True
+    assert metadata["within_unit_interval"] is True
+    assert np.isfinite(data).all()
+    assert np.min(data) >= 0.0
+    assert np.max(data) <= 1.0
+    assert isinstance(truth, set)
