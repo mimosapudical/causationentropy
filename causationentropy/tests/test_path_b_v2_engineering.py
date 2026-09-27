@@ -3,6 +3,7 @@ from unittest.mock import patch
 import numpy as np
 
 from causationentropy.core.discovery import (
+    _candidate_cmi_values,
     shuffle_test,
     standard_forward,
 )
@@ -64,14 +65,43 @@ def test_gaussian_context_reuse_is_numerically_equivalent():
     np.testing.assert_allclose(got, expected, rtol=1e-12, atol=1e-12)
 
 
-def test_shuffle_context_reuse_preserves_decision_and_pvalue():
+def test_candidate_gaussian_context_reuse_matches_direct_scores():
     rng = np.random.default_rng(2)
+    X = rng.normal(size=(80, 5))
+    Y = rng.normal(size=(80, 1))
+    Z = rng.normal(size=(80, 2))
+    candidates = list(range(X.shape[1]))
+
+    expected = np.asarray(
+        [
+            conditional_mutual_information(
+                X[:, [j]], Y, Z, method="gaussian"
+            )
+            for j in candidates
+        ]
+    )
+    got = _candidate_cmi_values(
+        X,
+        candidates,
+        Y,
+        Z,
+        "gaussian",
+        "euclidean",
+        5,
+        "silverman",
+    )
+
+    np.testing.assert_allclose(got, expected, rtol=1e-12, atol=1e-12)
+
+
+def test_shuffle_is_reproducible_with_internal_gaussian_reuse():
+    rng = np.random.default_rng(3)
     X = rng.normal(size=(80, 1))
     Z = rng.normal(size=(80, 2))
     Y = 0.3 * X + 0.2 * Z[:, [0]] + rng.normal(size=(80, 1))
     observed = conditional_mutual_information(X, Y, Z, method="gaussian")
 
-    plain = shuffle_test(
+    first = shuffle_test(
         X,
         Y,
         Z,
@@ -79,9 +109,8 @@ def test_shuffle_context_reuse_preserves_decision_and_pvalue():
         rng=123,
         n_shuffles=25,
         information="gaussian",
-        reuse_gaussian_context=False,
     )
-    cached = shuffle_test(
+    second = shuffle_test(
         X,
         Y,
         Z,
@@ -89,14 +118,9 @@ def test_shuffle_context_reuse_preserves_decision_and_pvalue():
         rng=123,
         n_shuffles=25,
         information="gaussian",
-        reuse_gaussian_context=True,
     )
 
-    assert plain["Pass"] == cached["Pass"]
-    assert plain["P_value"] == cached["P_value"]
-    np.testing.assert_allclose(
-        plain["Threshold"], cached["Threshold"], rtol=1e-12, atol=1e-12
-    )
+    assert first == second
 
 
 def test_conditional_rescue_adds_best_excluded_candidate():
