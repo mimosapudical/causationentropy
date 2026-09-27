@@ -31,20 +31,20 @@ echo "== [2/6] Discovery + information regression =="
 "$PYTEST" -q   causationentropy/tests/test_discovery.py   causationentropy/tests/core/information/test_conditional_mutual_information.py   | tee "$OUTDIR/02_regression_tests.txt"
 
 echo "== [3/6] Screening frontier + stress diagnostics =="
-"$PYTHON" experiments/path_b_screen_frontier_v2.py   --seeds "$SEEDS"   --n-shuffles "$SHUFFLES"   > "$OUTDIR/03_screen_frontier.json"
+"$PYTHON" -m experiments.path_b_screen_frontier_v2   --seeds "$SEEDS"   --n-shuffles "$SHUFFLES"   > "$OUTDIR/03_screen_frontier.json"
 
 echo "== [4/6] End-to-end Gaussian benchmark =="
 for seed in $(seq 0 $((SEEDS - 1))); do
-  "$PYTHON" experiments/path_b_benchmark_v2.py     --case gaussian     --seed "$seed"     --retention 0.30     --n-shuffles "$SHUFFLES"     --n-jobs "$NJOBS"     > "$OUTDIR/04_gaussian_seed_${seed}.json"
+  "$PYTHON" -m experiments.path_b_benchmark_v2     --case gaussian     --seed "$seed"     --retention 0.30     --n-shuffles "$SHUFFLES"     --n-jobs "$NJOBS"     > "$OUTDIR/04_gaussian_seed_${seed}.json"
 done
 
 echo "== [5/6] Nonlinear logistic + Poisson smoke =="
-"$PYTHON" experiments/path_b_benchmark_v2.py   --case logistic   --seed 0   --retention 0.30   --n-shuffles "$SHUFFLES"   --n-jobs "$NJOBS"   > "$OUTDIR/05_logistic_seed_0.json"
+"$PYTHON" -m experiments.path_b_benchmark_v2   --case logistic   --seed 0   --retention 0.30   --n-shuffles "$SHUFFLES"   --n-jobs "$NJOBS"   > "$OUTDIR/05_logistic_seed_0.json"
 
-"$PYTHON" experiments/path_b_benchmark_v2.py   --case poisson   --seed 0   --retention 0.30   --n-shuffles "$SHUFFLES"   --n-jobs "$NJOBS"   > "$OUTDIR/05_poisson_seed_0.json"
+"$PYTHON" -m experiments.path_b_benchmark_v2   --case poisson   --seed 0   --retention 0.30   --n-shuffles "$SHUFFLES"   --n-jobs "$NJOBS"   > "$OUTDIR/05_poisson_seed_0.json"
 
 echo "== [6/6] Summarize =="
-"$PYTHON" experiments/summarize_path_b_v2.py "$OUTDIR"   | tee "$OUTDIR/06_summary.md"
+"$PYTHON" -m experiments.summarize_path_b_v2 "$OUTDIR"   | tee "$OUTDIR/06_summary.md"
 
 echo
 echo "PATH_B_V2_VALIDATION_COMPLETE=$OUTDIR"
