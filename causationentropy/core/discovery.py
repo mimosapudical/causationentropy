@@ -951,15 +951,18 @@ def standard_forward(
             reuse_gaussian_context=reuse_gaussian_context,
         )
 
-        # Stable descending order matches repeated argmax + removal, including ties.
-        score_order = np.argsort(-ent_values, kind="stable")
+        # Replay the original repeated-argmax logic without recomputing scores.
+        # Keeping local candidate/score lists preserves ties and NaN behavior exactly.
+        round_candidates = list(candidates)
+        round_scores = ent_values.tolist()
         failed = []
         accepted = None
 
-        for k_best in score_order:
-            j_best = candidates[int(k_best)]
+        while round_candidates:
+            k_best = int(np.asarray(round_scores).argmax())
+            j_best = round_candidates[k_best]
             X_best = X_full[:, [j_best]]
-            mi_best = ent_values[int(k_best)]
+            mi_best = round_scores[k_best]
 
             passed = shuffle_test(
                 X_best,
@@ -979,7 +982,10 @@ def standard_forward(
             if passed:
                 accepted = j_best
                 break
+
             failed.append(j_best)
+            round_candidates.pop(k_best)
+            round_scores.pop(k_best)
 
         if failed:
             failed_set = set(failed)
