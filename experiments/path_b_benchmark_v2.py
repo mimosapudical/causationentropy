@@ -277,18 +277,58 @@ def gaussian_case(seed, n_nodes=12, T=300, p=0.12, rho=0.7):
         rho=rho, n=n_nodes, T=T, p=p, seed=seed, G=graph_true
     )
     truth = {(int(u), int(v), 1) for u, v in graph_true.edges()}
-    return data, truth, "gaussian"
+    metadata = {
+        "benchmark_role": "primary",
+        "generator": "linear_stochastic_gaussian_process",
+        "rho": rho,
+        "edge_probability": p,
+    }
+    return data, truth, "gaussian", metadata
 
 
-def logistic_case(seed, n_nodes=8, T=250, p=0.15):
-    data, adjacency = logisic_dynamics(n=n_nodes, p=p, t=T, seed=seed)
+def logistic_case(
+    seed,
+    n_nodes=8,
+    T=250,
+    p=0.25,
+    r=3.9,
+    sigma=0.01,
+):
+    # The repository default (r=3.99, sigma=0.1) can leave the invariant
+    # interval and overflow for longer trajectories. This lower-coupling
+    # configuration stayed finite and in [0, 1] across the local seed scan.
+    data, adjacency = logisic_dynamics(
+        n=n_nodes,
+        p=p,
+        t=T,
+        r=r,
+        sigma=sigma,
+        seed=seed,
+    )
+    if not np.isfinite(data).all():
+        raise ValueError(
+            "logistic benchmark produced non-finite values; "
+            "do not score an unstable trajectory"
+        )
     truth = {
         (int(source), int(target), 1)
         for source, target in zip(*np.nonzero(np.asarray(adjacency)))
         if source != target
     }
-    # KDE is the package's nonlinear estimator that does not rely on the open kNN path.
-    return data, truth, "kde"
+    metadata = {
+        "benchmark_role": "primary",
+        "generator": "logisic_dynamics",
+        "r": r,
+        "sigma": sigma,
+        "edge_probability": p,
+        "finite": True,
+        "within_unit_interval": bool(
+            np.min(data) >= 0.0 and np.max(data) <= 1.0
+        ),
+    }
+    # KDE is the package's nonlinear estimator that does not rely on the
+    # separately known kNN-estimator issues.
+    return data, truth, "kde", metadata
 
 
 def poisson_case(seed, n_nodes=8, T=250, p=0.15):
@@ -297,7 +337,16 @@ def poisson_case(seed, n_nodes=8, T=250, p=0.15):
         n=n_nodes, T=T, p=p, seed=seed, G=graph_true
     )
     truth = {(int(u), int(v), 1) for u, v in graph_true.edges()}
-    return data, truth, "poisson"
+    metadata = {
+        "benchmark_role": "estimator_audit",
+        "generator": "poisson_coupled_oscillators",
+        "edge_probability": p,
+        "note": (
+            "Keep outside the primary benchmark table until the repository "
+            "Poisson integration behavior is reproduced exactly."
+        ),
+    }
+    return data, truth, "poisson", metadata
 
 
 def run_case(
@@ -314,7 +363,7 @@ def run_case(
         "logistic": logistic_case,
         "poisson": poisson_case,
     }
-    data, truth, information = factories[case](seed)
+    data, truth, information, case_metadata = factories[case](seed)
     n_nodes = data.shape[1]
 
     result = {
@@ -330,6 +379,7 @@ def run_case(
             "n_shuffles": n_shuffles,
             "n_jobs": n_jobs,
             "truth_edges": len(truth),
+            **case_metadata,
         }
     }
 
