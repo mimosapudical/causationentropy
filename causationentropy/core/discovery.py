@@ -275,7 +275,7 @@ def discover_network(
                 metric,
                 k_means,
                 bandwidth,
-                reuse_gaussian_context=reuse_gaussian_context,
+            reuse_gaussian_context=reuse_gaussian_context,
             )
         if method == "alternative":
             S = alternative_optimal_causation_entropy(
@@ -289,7 +289,7 @@ def discover_network(
                 metric,
                 k_means,
                 bandwidth,
-                reuse_gaussian_context=reuse_gaussian_context,
+            reuse_gaussian_context=reuse_gaussian_context,
             )
         if method == "information_lasso":
             S = information_lasso_optimal_causation_entropy(
@@ -813,7 +813,7 @@ def alternative_forward(
             metric,
             k_means,
             bandwidth,
-                reuse_gaussian_context=reuse_gaussian_context,
+            reuse_gaussian_context=reuse_gaussian_context,
         )
 
         # 2. pick best
@@ -922,7 +922,7 @@ def standard_forward(
             metric,
             k_means,
             bandwidth,
-                reuse_gaussian_context=reuse_gaussian_context,
+            reuse_gaussian_context=reuse_gaussian_context,
         )
 
         # Replay the original repeated-argmax logic without recomputing scores.
