@@ -133,7 +133,6 @@ def run_path_b_v2(
             alpha2=alpha,
             n_shuffles=n_shuffles,
             information=information,
-            n_jobs=n_jobs,
             reuse_gaussian_context=(information == "gaussian"),
         )
         for local_idx in refined_local:
