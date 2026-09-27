@@ -29,7 +29,7 @@ def main():
     outdir = Path(sys.argv[1])
     frontier = load_json(outdir / "03_screen_frontier.json")
 
-    gaussian_files = sorted(outdir.glob("04_gaussian_seed_*.json"))
+    gaussian_files = sorted(outdir.glob("05_gaussian_seed_*.json"))
     gaussian = [load_json(path)["gaussian"] for path in gaussian_files]
 
     print("# Path B v2 local validation summary")
@@ -49,6 +49,24 @@ def main():
             f"{fmt(row['mean_full_forward_recall'])} | "
             f"{fmt(row['mean_full_support_recall'])} |"
         )
+
+    print()
+    print("## Common-random-number path preservation")
+    print()
+    crn_path = outdir / "04_common_random_numbers.json"
+    if crn_path.exists():
+        crn = load_json(crn_path)["summary"]
+        print("| Target retention | Actual retention | Forward closure recall | Restricted final recall |")
+        print("|---:|---:|---:|---:|")
+        for key in sorted(crn, key=float):
+            row = crn[key]
+            print(
+                f"| {key} | {fmt(row['mean_actual_retention'])} | "
+                f"{fmt(row['mean_forward_closure_recall'])} | "
+                f"{fmt(row['mean_restricted_final_recall'])} |"
+            )
+    else:
+        print("CRN diagnostic: NOT_RUN")
 
     print()
     print("## Gaussian end-to-end")
@@ -97,7 +115,7 @@ def main():
     print("## Nonlinear / estimator audit")
     print()
     for case in ("logistic", "poisson"):
-        path = outdir / f"05_{case}_seed_0.json"
+        path = outdir / f"06_{case}_seed_0.json"
         if not path.exists():
             print(f"- {case}: NOT_RUN")
             continue
