@@ -16,7 +16,23 @@ from causationentropy.core.information.mutual_information import (
 )
 
 
-def gaussian_conditional_mutual_information(X, Y, Z=None):
+def _gaussian_logdet_corr(A):
+    """Match the existing Gaussian CMI log-correlation determinant calculation."""
+    C = np.corrcoef(A.T)
+    return 0.0 if np.ndim(C) == 0 else np.linalg.slogdet(C)[1]
+
+
+def prepare_gaussian_cmi_context(Y, Z):
+    """Cache Gaussian CMI terms that are constant when only X changes."""
+    if Z is None:
+        return None
+    return {
+        "SZ": _gaussian_logdet_corr(Z),
+        "SYZ": _gaussian_logdet_corr(np.hstack((Y, Z))),
+    }
+
+
+def gaussian_conditional_mutual_information(X, Y, Z=None, context=None):
     r"""
     Compute conditional mutual information for multivariate Gaussian variables.
 
@@ -67,15 +83,15 @@ def gaussian_conditional_mutual_information(X, Y, Z=None):
     if Z is None:
         return gaussian_mutual_information(X, Y)
 
-    def _detcorr(A):
-        C = np.corrcoef(A.T)
-        # For 1D input, corrcoef returns scalar 1.0, and log(1.0) = 0.0
-        return 0.0 if np.ndim(C) == 0 else np.linalg.slogdet(C)[1]
+    if context is None:
+        SZ = _gaussian_logdet_corr(Z)
+        SYZ = _gaussian_logdet_corr(np.hstack((Y, Z)))
+    else:
+        SZ = context["SZ"]
+        SYZ = context["SYZ"]
 
-    SZ = _detcorr(Z)
-    SXZ = _detcorr(np.hstack((X, Z)))
-    SYZ = _detcorr(np.hstack((Y, Z)))
-    SXYZ = _detcorr(np.hstack((X, Y, Z)))
+    SXZ = _gaussian_logdet_corr(np.hstack((X, Z)))
+    SXYZ = _gaussian_logdet_corr(np.hstack((X, Y, Z)))
 
     cmi = 0.5 * (SXZ + SYZ - SZ - SXYZ)
     return cmi
