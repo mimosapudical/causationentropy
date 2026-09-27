@@ -67,6 +67,22 @@ Across the diagnostic seeds:
 A separate lag-group mechanism is therefore not justified by this diagnostic
 yet.
 
+## Rescue-conditioning ablation
+
+A follow-up checked whether the rescue score should also condition on the
+standard-oCSE target-history set Z_init, i.e.
+
+I(X_j; Y | Z_init, X_endpoint)
+
+instead of the simpler
+
+I(X_j; Y | X_endpoint).
+
+On the tested Gaussian seeds this did not improve support coverage: the 30% and
+40% retention settings were effectively tied, while the 20% setting was slightly
+worse with the extra Z_init conditioning. v2 therefore keeps the simpler
+endpoint-conditioned rescue rather than adding another conditioning layer.
+
 ## Screen coverage is not final-graph identity
 
 A candidate screen containing a full-oCSE support does **not** guarantee that a
@@ -153,8 +169,10 @@ The v2 primary nonlinear benchmark therefore uses:
 - T = 250
 - p = 0.25
 
-This configuration stayed finite and in [0,1] across the local stability scan.
-The benchmark code now refuses to score a non-finite trajectory.
+This exact benchmark configuration was rechecked over 20 seeds: all trajectories
+were finite and remained in [0,1], with an overall observed range of approximately
+0.0026 to 0.9900 and a mean of 14.6 directed truth edges. The benchmark code now
+refuses to score a non-finite trajectory.
 
 ## Poisson benchmark status
 
