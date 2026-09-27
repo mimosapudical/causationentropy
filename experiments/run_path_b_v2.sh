@@ -35,13 +35,13 @@ echo "== [3/6] Screening frontier + stress diagnostics =="
 
 echo "== [4/6] End-to-end Gaussian benchmark =="
 for seed in $(seq 0 $((SEEDS - 1))); do
-  "$PYTHON" -m experiments.path_b_benchmark_v2     --case gaussian     --seed "$seed"     --retention 0.30     --n-shuffles "$SHUFFLES"     --n-jobs "$NJOBS"     > "$OUTDIR/04_gaussian_seed_${seed}.json"
+  "$PYTHON" -m experiments.path_b_benchmark_v2     --case gaussian     --seed "$seed"     --retention 0.40     --n-shuffles "$SHUFFLES"     --n-jobs "$NJOBS"     > "$OUTDIR/04_gaussian_seed_${seed}.json"
 done
 
 echo "== [5/6] Nonlinear logistic + Poisson smoke =="
-"$PYTHON" -m experiments.path_b_benchmark_v2   --case logistic   --seed 0   --retention 0.30   --n-shuffles "$SHUFFLES"   --n-jobs "$NJOBS"   > "$OUTDIR/05_logistic_seed_0.json"
+"$PYTHON" -m experiments.path_b_benchmark_v2   --case logistic   --seed 0   --retention 0.40   --n-shuffles "$SHUFFLES"   --n-jobs "$NJOBS"   > "$OUTDIR/05_logistic_seed_0.json"
 
-"$PYTHON" -m experiments.path_b_benchmark_v2   --case poisson   --seed 0   --retention 0.30   --n-shuffles "$SHUFFLES"   --n-jobs "$NJOBS"   > "$OUTDIR/05_poisson_seed_0.json"
+"$PYTHON" -m experiments.path_b_benchmark_v2   --case poisson   --seed 0   --retention 0.40   --n-shuffles "$SHUFFLES"   --n-jobs "$NJOBS"   > "$OUTDIR/05_poisson_seed_0.json"
 
 echo "== [6/6] Summarize =="
 "$PYTHON" -m experiments.summarize_path_b_v2 "$OUTDIR"   | tee "$OUTDIR/06_summary.md"
