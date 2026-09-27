@@ -16,6 +16,8 @@ from sklearn.linear_model import Lasso, LassoCV, LassoLarsIC
 
 from causationentropy.core.information.conditional_mutual_information import (
     conditional_mutual_information,
+    gaussian_conditional_mutual_information,
+    prepare_gaussian_cmi_context,
 )
 
 
@@ -38,10 +40,21 @@ def _candidate_cmi_values(
     k_means,
     bandwidth,
     n_jobs=1,
+    reuse_gaussian_context=False,
 ):
     """Score independent candidate-CMI calls in parallel, preserving input order."""
 
+    gaussian_context = (
+        prepare_gaussian_cmi_context(Y, Z)
+        if reuse_gaussian_context and information == "gaussian" and Z is not None
+        else None
+    )
+
     def score(j):
+        if gaussian_context is not None:
+            return gaussian_conditional_mutual_information(
+                X_full[:, [j]], Y, Z, context=gaussian_context
+            )
         return conditional_mutual_information(
             X_full[:, [j]],
             Y,
@@ -74,6 +87,7 @@ def discover_network(
     n_jobs=-1,
     random_state: Union[int, np.random.Generator, None] = 42,
     only_return_significant: bool = True,
+    reuse_gaussian_context: bool = False,
 ) -> nx.MultiDiGraph:
     r"""
     Infer a causal graph via Optimal Causation Entropy (oCSE).
@@ -278,6 +292,7 @@ def discover_network(
                 k_means,
                 bandwidth,
                 n_jobs=n_jobs,
+                reuse_gaussian_context=reuse_gaussian_context,
             )
         if method == "alternative":
             S = alternative_optimal_causation_entropy(
@@ -292,6 +307,7 @@ def discover_network(
                 k_means,
                 bandwidth,
                 n_jobs=n_jobs,
+                reuse_gaussian_context=reuse_gaussian_context,
             )
         if method == "information_lasso":
             S = information_lasso_optimal_causation_entropy(
@@ -423,6 +439,7 @@ def standard_optimal_causation_entropy(
     k_means=5,
     bandwidth="silverman",
     n_jobs=1,
+    reuse_gaussian_context=False,
 ):
     r"""
     Execute the standard optimal Causation Entropy algorithm with initial conditioning set.
@@ -475,6 +492,7 @@ def standard_optimal_causation_entropy(
         k_means,
         bandwidth,
         n_jobs=n_jobs,
+        reuse_gaussian_context=reuse_gaussian_context,
     )
 
     S = backward(
@@ -488,6 +506,7 @@ def standard_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
+        reuse_gaussian_context=reuse_gaussian_context,
     )
 
     return S
@@ -505,6 +524,7 @@ def alternative_optimal_causation_entropy(
     k_means=5,
     bandwidth="silverman",
     n_jobs=1,
+    reuse_gaussian_context=False,
 ):
     """
     Execute the alternative optimal Causation Entropy algorithm without initial conditioning.
@@ -547,6 +567,7 @@ def alternative_optimal_causation_entropy(
         k_means,
         bandwidth,
         n_jobs=n_jobs,
+        reuse_gaussian_context=reuse_gaussian_context,
     )
 
     S = backward(
@@ -560,6 +581,7 @@ def alternative_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
+        reuse_gaussian_context=reuse_gaussian_context,
     )
 
     return S
@@ -750,6 +772,7 @@ def alternative_forward(
     k_means=5,
     bandwidth="silverman",
     n_jobs=1,
+    reuse_gaussian_context=False,
 ):
     r"""
     Forward selection phase of oCSE without initial conditioning set.
@@ -814,6 +837,7 @@ def alternative_forward(
             k_means,
             bandwidth,
             n_jobs=n_jobs,
+            reuse_gaussian_context=reuse_gaussian_context,
         )
 
         # 2. pick best
@@ -834,6 +858,7 @@ def alternative_forward(
             metric=metric,
             k_means=k_means,
             bandwidth=bandwidth,
+            reuse_gaussian_context=reuse_gaussian_context,
         )["Pass"]
         if not passed:
             break
@@ -857,6 +882,7 @@ def standard_forward(
     k_means=5,
     bandwidth="silverman",
     n_jobs=1,
+    reuse_gaussian_context=False,
 ):
     r"""
     Standard forward selection phase of oCSE with initial conditioning set.
@@ -922,6 +948,7 @@ def standard_forward(
             k_means,
             bandwidth,
             n_jobs=n_jobs,
+            reuse_gaussian_context=reuse_gaussian_context,
         )
 
         # Stable descending order matches repeated argmax + removal, including ties.
@@ -946,6 +973,7 @@ def standard_forward(
                 metric=metric,
                 k_means=k_means,
                 bandwidth=bandwidth,
+                reuse_gaussian_context=reuse_gaussian_context,
             )["Pass"]
 
             if passed:
@@ -979,6 +1007,7 @@ def backward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
+    reuse_gaussian_context=False,
 ):
     r"""
     Backward elimination phase of optimal Causation Entropy.
@@ -1036,9 +1065,25 @@ def backward(
         Z = X_full[:, [k for k in S if k != j]] if len(S) > 1 else None
 
         Xj = X_full[:, [j]]
-        cmij = conditional_mutual_information(
-            Xj, Y, Z, method=information, metric=metric, k=k_means, bandwidth=bandwidth
+        gaussian_context = (
+            prepare_gaussian_cmi_context(Y, Z)
+            if reuse_gaussian_context and information == "gaussian" and Z is not None
+            else None
         )
+        if gaussian_context is not None:
+            cmij = gaussian_conditional_mutual_information(
+                Xj, Y, Z, context=gaussian_context
+            )
+        else:
+            cmij = conditional_mutual_information(
+                Xj,
+                Y,
+                Z,
+                method=information,
+                metric=metric,
+                k=k_means,
+                bandwidth=bandwidth,
+            )
 
         passed = shuffle_test(
             Xj,
@@ -1052,6 +1097,7 @@ def backward(
             metric=metric,
             k_means=k_means,
             bandwidth=bandwidth,
+            reuse_gaussian_context=reuse_gaussian_context,
         )["Pass"]
         if not passed:
             S.remove(j)  # prune j
@@ -1071,6 +1117,7 @@ def shuffle_test(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
+    reuse_gaussian_context=False,
 ):
     r"""
     Permutation test for conditional mutual information significance.
@@ -1151,18 +1198,28 @@ def shuffle_test(
     """
     rng = np.random.default_rng(rng)
     null_cmi = np.empty(n_shuffles)
+    gaussian_context = (
+        prepare_gaussian_cmi_context(Y, Z)
+        if reuse_gaussian_context and information == "gaussian" and Z is not None
+        else None
+    )
 
     for i in range(n_shuffles):
         X_perm = X[rng.permutation(len(X)), :]  # shuffle rows
-        null_cmi[i] = conditional_mutual_information(
-            X_perm,
-            Y,
-            Z,
-            method=information,
-            metric=metric,
-            k=k_means,
-            bandwidth=bandwidth,
-        )
+        if gaussian_context is not None:
+            null_cmi[i] = gaussian_conditional_mutual_information(
+                X_perm, Y, Z, context=gaussian_context
+            )
+        else:
+            null_cmi[i] = conditional_mutual_information(
+                X_perm,
+                Y,
+                Z,
+                method=information,
+                metric=metric,
+                k=k_means,
+                bandwidth=bandwidth,
+            )
 
     threshold = np.percentile(null_cmi, 100 * (1 - alpha))
     # Calculate p-value: proportion of null values >= observed value
