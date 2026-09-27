@@ -87,8 +87,15 @@ def information_lars_order(X, Y, values):
     y = Y.reshape(-1)
     y_centered = y - y.mean()
 
-    _, active, _ = lars_path(X_centered, y_centered, method="lasso")
-    order = [int(j) for j in active]
+    try:
+        _, active, _ = lars_path(X_centered, y_centered, method="lasso")
+        order = [int(j) for j in active]
+    except (ValueError, np.linalg.LinAlgError):
+        # This path is diagnostic only. If LARS becomes numerically singular,
+        # keep the experiment running with the information ranking rather than
+        # changing the production Path-A implementation.
+        order = []
+
     order.extend(int(j) for j in np.argsort(-values) if int(j) not in order)
     return order
 
@@ -172,7 +179,6 @@ def exact_standard_support(
             alpha2=alpha,
             n_shuffles=n_shuffles,
             information=information,
-            n_jobs=1,
         )
     )
 
