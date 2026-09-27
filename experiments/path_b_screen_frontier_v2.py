@@ -74,7 +74,7 @@ def information_values(
 
 def information_lars_order(X, Y, values):
     """Return LARS entry order using numerically stable relative information weights."""
-    peak = float(values.max(initial=0.0))
+    peak = float(np.max(values)) if values.size else 0.0
     if peak <= 0:
         return list(range(X.shape[1]))
 
