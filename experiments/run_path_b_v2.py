@@ -92,7 +92,43 @@ def main():
         scale_shuffles = 20
         nonlinear_seeds = (0, 1, 2)
 
-    print("== [1/8] Focused engineering tests ==")
+    print("== [1/9] Style / syntax gates ==")
+    style_targets = [
+        "causationentropy/core/discovery.py",
+        "causationentropy/core/information/conditional_mutual_information.py",
+        "causationentropy/tests/test_path_b_v2_engineering.py",
+        "causationentropy/tests/test_path_b_benchmark_smoke.py",
+        "experiments/path_b_benchmark_v1.py",
+        "experiments/path_b_benchmark_v2.py",
+        "experiments/path_b_common_random_numbers.py",
+        "experiments/path_b_screen_frontier_v2.py",
+        "experiments/run_path_b_v2.py",
+        "experiments/summarize_path_b_v2.py",
+    ]
+    style_commands = [
+        [sys.executable, "-m", "black", "--check", *style_targets],
+        [sys.executable, "-m", "isort", "--check-only", *style_targets],
+        [
+            sys.executable,
+            "-m",
+            "flake8",
+            "--select=E9,F63,F7,F82",
+            *style_targets,
+        ],
+    ]
+    style_log = outdir / "00_style_checks.txt"
+    with style_log.open("w", encoding="utf-8") as handle:
+        for command in style_commands:
+            print("+", " ".join(command), file=handle, flush=True)
+            subprocess.run(
+                command,
+                check=True,
+                stdout=handle,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+
+    print("== [2/9] Focused engineering tests ==")
     focused = [
         sys.executable,
         "-m",
@@ -110,7 +146,7 @@ def main():
             text=True,
         )
 
-    print("== [2/8] Discovery + information regression ==")
+    print("== [3/9] Discovery + information regression ==")
     regression = [
         sys.executable,
         "-m",
@@ -131,7 +167,7 @@ def main():
             text=True,
         )
 
-    print("== [3/8] Screening frontier + stress diagnostics ==")
+    print("== [4/9] Screening frontier + stress diagnostics ==")
     run_command(
         python_module(
             "experiments.path_b_screen_frontier_v2",
@@ -143,7 +179,7 @@ def main():
         outdir / "03_screen_frontier.json",
     )
 
-    print("== [4/8] Common-random-number path diagnostic ==")
+    print("== [5/9] Common-random-number path diagnostic ==")
     run_command(
         python_module(
             "experiments.path_b_common_random_numbers",
@@ -155,7 +191,7 @@ def main():
         outdir / "04_common_random_numbers.json",
     )
 
-    print("== [5/8] End-to-end Gaussian accuracy benchmark ==")
+    print("== [6/9] End-to-end Gaussian accuracy benchmark ==")
     for seed in range(seeds):
         run_command(
             python_module(
@@ -172,7 +208,7 @@ def main():
             outdir / f"05_gaussian_seed_{seed}.json",
         )
 
-    print("== [6/8] Gaussian scaling benchmark ==")
+    print("== [7/9] Gaussian scaling benchmark ==")
     for n_nodes in scale_nodes:
         T = max(300, 5 * n_nodes)
         for seed in range(scale_seeds):
@@ -195,7 +231,7 @@ def main():
                 outdir / f"06_scale_n{n_nodes}_seed_{seed}.json",
             )
 
-    print("== [7/8] Nonlinear logistic + Poisson estimator audit ==")
+    print("== [8/9] Nonlinear logistic + Poisson estimator audit ==")
     for seed in nonlinear_seeds:
         run_command(
             python_module(
@@ -234,7 +270,7 @@ def main():
         encoding="utf-8",
     )
 
-    print("== [8/8] Markdown summary ==")
+    print("== [9/9] Markdown summary ==")
     summary_path = outdir / "08_summary.md"
     with summary_path.open("w", encoding="utf-8") as handle:
         subprocess.run(
