@@ -17,8 +17,8 @@ or a replicated experiment directly supporting it.
 | Partitioned certificate | DONE DIAGNOSTIC | confirms block-size power dilution; actual misses remain ultra-weak | optional appendix |
 | Beta-min phase transition | DONE INITIAL | controlled DAG VAR and 5-seed floored-VAR replication | add confidence intervals / broader N,T,density sweep |
 | Suppression phase transition | DONE INITIAL | fixed coefficients, correlation-controlled cancellation, 20 seeds; budget sweep | replicate at additional T/noise levels if space permits |
-| End-to-end Gaussian accuracy | PARTIAL | quick one-seed result and prior diagnostics | multi-seed replication currently required |
-| Scaling advantage | PARTIAL | quick N20/N50 shows ~1.3-1.5x wall-clock and ~40% CMI-work reduction | replicated N20/N50/N100 trend required |
+| End-to-end Gaussian accuracy | DONE PRIMARY | five-seed N=12 replication: full F1 0.787±0.136 vs Path-B 0.781±0.124; aggregate 1.57x speedup; 39.2% total-CMI and 41.4% shuffle-CMI reduction | broader N/T/density sweep still useful |
+| Scaling advantage | PARTIAL | quick N20/N50 shows ~1.3-1.5x wall-clock and ~40% CMI-work reduction | replicated N20/N50/N100 run is the remaining scaling gate |
 | Comparison baselines | PARTIAL | full oCSE, plain Lasso, Information-Lasso already emitted by benchmark | add/justify strongest relevant screening baselines (e.g. SIS/forward/HOLP where appropriate) |
 | Nonlinear generality | OPEN / OUT OF SCOPE | logistic/Poisson quick results are poor | either explicitly scope paper to Gaussian linear regime or design separate extension |
 | Clean production implementation | OPEN | current branch is experiment-heavy | make clean core branch after method freezes |
@@ -54,3 +54,25 @@ penalty.
 3. Finish replicated Gaussian end-to-end/scaling experiments and strongest
    baseline comparisons.
 4. Freeze the algorithm, produce a clean implementation, and write the paper.
+
+
+## Five-seed primary Gaussian replication
+
+Using the primary N=12, T=300 Gaussian benchmark with 50 shuffles and seeds
+0--4:
+
+- candidate retention: 0.4561 ± 0.0034;
+- screen recall of the full-oCSE per-target support: 1.000 for all five seeds;
+- refined/full-oCSE edge recall: mean 0.9662 (range 0.90--1.00);
+- full-oCSE truth F1: 0.7869 ± 0.1364;
+- Path-B truth F1: 0.7810 ± 0.1243;
+- mean F1 difference Path-B minus full: -0.0059;
+- mean precision difference: -0.00095;
+- mean recall difference: -0.0105;
+- aggregate end-to-end speedup: 1.566x;
+- aggregate total-CMI reduction: 39.18%;
+- aggregate shuffle-CMI reduction: 41.40%.
+
+The result is not exact graph reproduction on every seed.  In particular, seed
+3 retains only 90% of full-oCSE edges yet improves truth F1 from 0.595 to 0.629,
+which reinforces the distinction between baseline identity and causal accuracy.
