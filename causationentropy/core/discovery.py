@@ -863,9 +863,16 @@ def backward(
 
     .. math::
 
-        I(X_j^{(t)}; Y^{(t+\tau)} | \mathbf{S}_{-j}^{(t)}) > \text{threshold}
+        I\!\left(
+        X_j^{(t)}; Y^{(t+\tau)}
+        \middle|
+        \mathbf{Z}_{\mathrm{init}}^{(t)}
+        \cup \mathbf{S}_{-j}^{(t)}
+        \right) > \text{threshold}
 
-    where :math:`\mathbf{S}_{-j}^{(t)}` represents all selected predictors except :math:`X_j`.
+    where :math:`\mathbf{S}_{-j}^{(t)}` contains the selected predictors
+    except :math:`X_j`, and :math:`\mathbf{Z}_{\mathrm{init}}^{(t)}`
+    is an optional fixed conditioning baseline.
 
     Parameters
     ----------
@@ -893,8 +900,9 @@ def backward(
     Notes
     -----
     Predictors are evaluated in random order to avoid selection bias. A predictor is
-    removed if its conditional mutual information with the target, given all other
-    selected predictors, falls below the significance threshold.
+    removed if its conditional mutual information with the target, given the
+    fixed baseline and all other selected predictors, falls below the
+    significance threshold.
 
     The backward phase is essential for controlling false positive rates in causal
     discovery, as forward selection may include predictors that become redundant
