@@ -1,0 +1,44 @@
+name: Path B suppression audit
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - "experiments/path_b_suppression_phase_transition.py"
+      - ".github/workflows/path-b-suppression-audit.yml"
+  workflow_dispatch:
+
+jobs:
+  suppression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          mkdir -p experiments/results/path_b_suppression_ci
+      - name: Run fixed-parent suppression sweep
+        run: |
+          python -m experiments.path_b_suppression_phase_transition \
+            --n-nodes 50 \
+            --T 200 \
+            --beta 0.12 \
+            --gamma -0.15 \
+            --rhos 0.0 0.2 0.4 0.6 0.7 0.75 0.8 \
+            --noise-scale 0.15 \
+            --retention 0.40 \
+            --seeds 20 \
+            > experiments/results/path_b_suppression_ci/suppression.json
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-suppression-results
+          path: experiments/results/path_b_suppression_ci
+          if-no-files-found: warn
