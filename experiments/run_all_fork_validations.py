@@ -44,6 +44,11 @@ VALIDATIONS = [
         "experiment/lasso-posthoc-significance-v1",
         ["-m", "experiments.run_lasso_posthoc_significance_v1"],
     ),
+    (
+        "Combined standard-oCSE correctness",
+        "experiment/standard-ocse-correctness-integration-v1",
+        ["-m", "experiments.run_standard_ocse_correctness_integration_v1"],
+    ),
 ]
 
 
