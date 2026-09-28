@@ -193,3 +193,47 @@ finite-sample-detectable true parent.
 The theory target should therefore be stated in terms of parent-sure screening
 and causal-support consistency.  Finite-sample full-graph identity remains a
 diagnostic for path instability, not the primary correctness criterion.
+
+
+## 8. Exact restricted-candidate corollary and original assumptions
+
+The restricted-candidate argument uses exactly the population assumptions in
+Sun, Taylor & Bollt (2015), Eq. (2.8):
+
+1. stationarity with a continuous distribution;
+2. temporally Markov dynamics;
+3. spatially Markov dynamics with respect to the causal-parent set;
+4. faithful Markov dependence, so changing which true parents are conditioned
+   upon changes the relevant conditional distribution.
+
+Theorem 2.2(b) states that once all causal parents are included in the
+conditioning set, any remaining set contributes zero causation entropy.
+Theorem 2.2(c) states that an unconditioned true parent contributes strictly
+positive causation entropy.  Lemma 2.4 uses precisely this fact to prove that
+aggregative discovery cannot stop while a true parent is still absent.  Lemma
+2.5 then requires only a starting superset of the true parents and removes
+nonparents.
+
+Therefore the original proof extends immediately from candidate universe
+(V) to any screened universe (W) satisfying
+
+[
+N_Isubseteq W.
+]
+
+More explicitly, run Algorithm 2.1 with every occurrence of
+(V-K) replaced by (W-K).  If the restricted algorithm stops at (K_q)
+while some (jin N_Isetminus K_q) remains, then (jin Wsetminus K_q)
+and Theorem 2.2(c) gives
+
+[
+C_{j	o Imid K_q}>0,
+]
+
+contradicting the zero stopping value.  Hence (N_Isubseteq K_q).  Lemma 2.5
+then applies unchanged to (K_q) and returns (N_I).
+
+For higher-order lag models or explicit target-history conditioning, the clean
+paper notation should use the standard expanded first-order state
+representation noted by Sun et al.; the screen is then a subset of lagged
+state coordinates and the same argument applies coordinate-wise.
