@@ -1,0 +1,43 @@
+name: Path B true-parent retention frontier
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - "experiments/path_b_true_parent_retention_frontier.py"
+      - ".github/workflows/path-b-true-parent-frontier.yml"
+  workflow_dispatch:
+
+jobs:
+  retention-frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run true-parent retention frontier
+        run: |
+          mkdir -p experiments/results/path_b_true_parent_frontier
+          python -m experiments.path_b_true_parent_retention_frontier \
+            --n-nodes 50 \
+            --sample-sizes 150 300 600 \
+            --weight-floors 0.0 0.1 0.25 0.5 \
+            --retentions 0.10 0.20 0.30 0.40 0.50 \
+            --seeds 3 \
+            > experiments/results/path_b_true_parent_frontier/frontier.json
+
+      - name: Upload retention frontier
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-true-parent-frontier-results
+          path: experiments/results/path_b_true_parent_frontier
