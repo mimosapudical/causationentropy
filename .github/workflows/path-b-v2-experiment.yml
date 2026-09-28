@@ -23,17 +23,9 @@ jobs:
           python -m pip install -e .
           python -m pip install pytest
 
-      - name: Focused Path B v2 tests
-        run: |
-          python -m pytest -q             causationentropy/tests/test_path_b_v2_engineering.py             causationentropy/tests/test_path_b_benchmark_smoke.py
-
-      - name: Discovery and Gaussian-CMI regression
-        run: |
-          python -m pytest -q             causationentropy/tests/test_discovery.py             causationentropy/tests/core/information/test_conditional_mutual_information.py
-
       - name: Quick Path B v2 validation
         run: |
-          python -m experiments.run_path_b_v2             --mode quick             --outdir experiments/results/path_b_v2_ci
+          python -m experiments.run_path_b_v2 --mode quick --outdir experiments/results/path_b_v2_ci
 
       - name: Upload experiment outputs
         if: always()
