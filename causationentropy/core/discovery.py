@@ -217,13 +217,26 @@ def discover_network(
         print(f"Estimating edges for node {i} ({var_names[i]})")
 
         Y = Y_all[:, [i]]  # shape: (T - max_lag, 1)
+        candidate_ids = list(range(len(feature_names)))
         if method == "standard":
             Z_init = []
             for tau in range(1, max_lag + 1):
                 Z_init.append(series[max_lag - tau : T - tau, i])  # lagged Y_i
             Z_init = np.column_stack(Z_init)  # shape: (T - max_lag, max_lag)
-            S = standard_optimal_causation_entropy(
-                X_lagged,
+
+            # The target's own lagged columns are already present in Z_init.
+            # Testing those identical columns again as candidate causes redundant
+            # I(X_i(t-lag); Y_i(t) | ..., X_i(t-lag), ...) evaluations and can
+            # make correlation-based estimators singular. Standard oCSE therefore
+            # searches only lagged predictors from the other variables.
+            candidate_ids = [
+                idx
+                for idx, (source, _lag) in enumerate(feature_names)
+                if source != i
+            ]
+            X_candidates = X_lagged[:, candidate_ids]
+            S_local = standard_optimal_causation_entropy(
+                X_candidates,
                 Y,
                 Z_init,
                 rng,
@@ -235,6 +248,7 @@ def discover_network(
                 k_means,
                 bandwidth,
             )
+            S = [candidate_ids[idx] for idx in S_local]
         if method == "alternative":
             S = alternative_optimal_causation_entropy(
                 X_lagged,
@@ -313,8 +327,7 @@ def discover_network(
             # matches the significant edges above (selected set, minus the
             # candidate itself when it is selected).
             selected = set(S)
-            n_features = len(feature_names)
-            for cand in range(n_features):
+            for cand in candidate_ids:
                 if cand in selected:
                     continue
                 src_var, src_lag = feature_names[cand]
