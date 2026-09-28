@@ -593,3 +593,72 @@ This result is particularly well matched to the present implementation:
 The high-dimensional (pge n-1) CV branch still requires a different
 argument, such as the RE-based result above or a dedicated high-dimensional
 screening theorem.
+
+
+## 12. Sharper observable OLS-to-Lasso screening certificate for n > p
+
+The previous KKT bound compares the fitted Lasso coefficient to the unknown
+population coefficient.  In the full-column-rank regime there is an even
+sharper finite-sample statement.
+
+Let
+
+[
+widehat	heta_{mathrm{OLS}}
+=
+G^{-1}rac{widetilde X^	op y}{n}.
+]
+
+The OLS normal equations give zero score, while the Lasso KKT equations give
+
+[
+G(
+widehat	heta_{mathrm{Lasso}}
+-
+widehat	heta_{mathrm{OLS}}
+)
+=
+-lambda z,
+qquad
+|z|_inftyle1.
+]
+
+Hence
+
+[
+|
+widehat	heta_{mathrm{Lasso}}
+-
+widehat	heta_{mathrm{OLS}}
+|_infty
+le
+lambda|G^{-1}|_infty.
+]
+
+Therefore, for any coordinate (j),
+
+[
+|widehat	heta_{mathrm{OLS},j}|
+>
+lambda|G^{-1}|_infty
+quadLongrightarrowquad
+widehat	heta_{mathrm{Lasso},j}
+e0.
+]
+
+For an audit in which the true parent set (S) is known, the condition
+
+[
+min_{jin S}
+|widehat	heta_{mathrm{OLS},j}|
+>
+lambda|G^{-1}|_infty
+]
+
+is a deterministic finite-sample certificate that the BIC-tuned Path-A Lasso
+cannot drop any true parent.
+
+This certificate uses the actual chosen BIC penalty and observed design.  It
+does not require iid samples, a noise model, an RE condition, or asymptotic BIC
+consistency.  Its limitation is the full-rank requirement (n>p), so it
+complements rather than replaces the high-dimensional RE/time-series theorem.
