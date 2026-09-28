@@ -6,10 +6,112 @@ import pandas as pd
 import pytest
 
 from causationentropy.core.discovery import (
+    backward,
     discover_network,
     lasso_optimal_causation_entropy,
     shuffle_test,
+    standard_optimal_causation_entropy,
 )
+
+
+class TestStandardConditioningConsistency:
+    """Regression tests for fixed target-history conditioning in standard oCSE."""
+
+    @patch("causationentropy.core.discovery.backward")
+    @patch("causationentropy.core.discovery.standard_forward")
+    def test_standard_optimal_passes_z_init_to_backward(
+        self, mock_forward, mock_backward
+    ):
+        """The same Z_init used in forward must remain fixed in backward."""
+        rng = np.random.default_rng(0)
+        X = rng.normal(size=(30, 4))
+        Y = rng.normal(size=(30, 1))
+        Z_init = rng.normal(size=(30, 2))
+        mock_forward.return_value = [1, 3]
+        mock_backward.return_value = [1]
+
+        selected = standard_optimal_causation_entropy(
+            X,
+            Y,
+            Z_init,
+            rng,
+            n_shuffles=5,
+        )
+
+        assert selected == [1]
+        assert mock_backward.call_count == 1
+        assert mock_backward.call_args.kwargs["Z_init"] is Z_init
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch(
+        "causationentropy.core.discovery.conditional_mutual_information"
+    )
+    def test_backward_conditions_on_fixed_z_init(
+        self, mock_cmi, mock_shuffle
+    ):
+        """Every backward test should include the fixed baseline conditioning."""
+        rng = np.random.default_rng(1)
+        X = rng.normal(size=(25, 3))
+        Y = rng.normal(size=(25, 1))
+        Z_init = rng.normal(size=(25, 2))
+        mock_cmi.return_value = 0.5
+        mock_shuffle.return_value = {
+            "Threshold": 0.1,
+            "Value": 0.5,
+            "Pass": True,
+            "P_value": 0.0,
+        }
+
+        result = backward(
+            X,
+            Y,
+            [0, 1],
+            rng,
+            n_shuffles=3,
+            Z_init=Z_init,
+        )
+
+        assert set(result) == {0, 1}
+        assert mock_cmi.call_count == 2
+        for call in mock_cmi.call_args_list:
+            Z = call.args[2]
+            assert Z.shape == (25, 3)
+            np.testing.assert_allclose(Z[:, :2], Z_init)
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch(
+        "causationentropy.core.discovery.conditional_mutual_information"
+    )
+    @patch(
+        "causationentropy.core.discovery.standard_optimal_causation_entropy"
+    )
+    def test_standard_final_reporting_keeps_target_history(
+        self, mock_standard, mock_cmi, mock_shuffle
+    ):
+        """Final standard edge statistics must use target-history conditioning."""
+        rng = np.random.default_rng(2)
+        data = rng.normal(size=(40, 2))
+        mock_standard.side_effect = [[0], []]
+        mock_cmi.return_value = 0.4
+        mock_shuffle.return_value = {
+            "Threshold": 0.1,
+            "Value": 0.4,
+            "Pass": True,
+            "P_value": 0.01,
+        }
+
+        graph = discover_network(
+            data,
+            method="standard",
+            max_lag=1,
+            n_shuffles=3,
+        )
+
+        assert graph.number_of_edges() == 1
+        assert mock_cmi.call_count >= 1
+        final_Z = mock_cmi.call_args_list[-1].args[2]
+        expected_history = data[:-1, [1]]
+        np.testing.assert_allclose(final_Z, expected_history)
 
 
 class TestDiscoverNetwork:
