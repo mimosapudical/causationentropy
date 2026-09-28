@@ -19,26 +19,37 @@ import sys
 from pathlib import Path
 
 
-def run_command(args, outfile=None, env=None):
+def run_command(args, outfile=None, env=None, allow_failure=False):
     print("+", " ".join(str(arg) for arg in args), flush=True)
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
 
     if outfile is None:
-        subprocess.run(args, check=True, env=merged_env)
-        return
+        completed = subprocess.run(args, check=False, env=merged_env)
+        if completed.returncode != 0 and not allow_failure:
+            raise subprocess.CalledProcessError(completed.returncode, args)
+        return completed.returncode
 
     outfile.parent.mkdir(parents=True, exist_ok=True)
-    with outfile.open("w", encoding="utf-8") as handle:
-        subprocess.run(
-            args,
-            check=True,
-            stdout=handle,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=merged_env,
+    completed = subprocess.run(
+        args,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=merged_env,
+    )
+    outfile.write_text(completed.stdout, encoding="utf-8")
+    if completed.stderr:
+        outfile.with_suffix(outfile.suffix + ".stderr.txt").write_text(
+            completed.stderr,
+            encoding="utf-8",
         )
+    if completed.returncode != 0 and not allow_failure:
+        print(completed.stderr, file=sys.stderr)
+        raise subprocess.CalledProcessError(completed.returncode, args)
+    return completed.returncode
 
 
 def python_module(module, *args):
@@ -200,7 +211,7 @@ def main():
 
     # Poisson remains an estimator audit rather than a primary benchmark until
     # the repository's existing Poisson integration behavior is resolved.
-    run_command(
+    poisson_code = run_command(
         python_module(
             "experiments.path_b_benchmark_v2",
             "--case",
@@ -213,6 +224,11 @@ def main():
             shuffles,
         ),
         outdir / "07_poisson_seed_0.json",
+        allow_failure=True,
+    )
+    (outdir / "07_poisson_status.txt").write_text(
+        "PASS\n" if poisson_code == 0 else f"AUDIT_FAILED_RETURN_CODE={poisson_code}\n",
+        encoding="utf-8",
     )
 
     print("== [8/8] Markdown summary ==")
