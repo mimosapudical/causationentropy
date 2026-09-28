@@ -35,13 +35,14 @@ def main():
     print("# Path B v2 local validation summary")
     print()
     print(f"- Gaussian seeds completed: {len(gaussian)}")
+    print(f"- Frontier targets per screen: {next(iter(frontier['gaussian_frontier']['summary'].values()))['targets'] if frontier['gaussian_frontier']['summary'] else 0}")
     print()
 
     summary = frontier["gaussian_frontier"]["summary"]
     print("## Screening frontier")
     print()
-    print("| Screen | Mean retention | Full-oCSE support recall |")
-    print("|---|---:|---:|")
+    print("| Screen | Mean retention | Full forward-closure recall | Full final-support recall |")
+    print("|---|---:|---:|---:|")
     for key in sorted(summary):
         row = summary[key]
         print(
