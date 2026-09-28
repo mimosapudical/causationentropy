@@ -62,15 +62,23 @@ Facts:
 - ISIS/iterative screening literature provides a principled route to remove
   the marginal-correlation assumption.
 
-Pending experiment:
-- one-shot vs iterative conditional rescue at identical budget and explicit
-  no-shuffle CMI cost.
+Experiment result:
+- iterative conditional rescue did **not** improve the main regimes enough to
+  justify its cost;
+- floored N=50, no floor: one-shot parent recall 0.908 vs iterative 0.877;
+- floor 0.25: 0.992 vs 0.988;
+- floor 0.50: both 1.000;
+- hidden-parent stress: both 1.000;
+- iterative rescue required roughly 12--13x as many no-shuffle CMI score
+  evaluations in the N=50 regimes.
 
-Decision rule:
-- if iterative rescue materially improves parent-sure recovery, develop a
-  vectorized/low-cost iterative screen and adapt an ISIS-style theorem;
-- otherwise keep the simpler one-shot rescue and state a conditional
-  competition / visibility assumption rather than adding complexity.
+Decision:
+- keep the simpler one-shot rescue in the primary method;
+- use ISIS / iterative screening as related theory showing why conditional
+  screening is principled, but do not import its iterative algorithm merely for
+  theorem convenience;
+- state and analyze a conditional-competition / rescue-budget condition for the
+  one-shot stage.
 
 ## B. Empirical evidence
 
