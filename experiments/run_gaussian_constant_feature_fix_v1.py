@@ -34,6 +34,10 @@ def main():
             "causationentropy/tests/core/information/"
             "test_mutual_information.py"
         ),
+        (
+            "causationentropy/tests/core/information/"
+            "test_conditional_mutual_information.py"
+        ),
         "experiments/run_gaussian_constant_feature_fix_v1.py",
     ]
 
@@ -65,6 +69,10 @@ def main():
             (
                 "causationentropy/tests/core/information/"
                 "test_mutual_information.py"
+            ),
+            (
+                "causationentropy/tests/core/information/"
+                "test_conditional_mutual_information.py"
             ),
         ],
         outdir / "04_focused_tests.txt",
