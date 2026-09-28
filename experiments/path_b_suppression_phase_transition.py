@@ -1,22 +1,23 @@
 """Controlled suppression benchmark for Path-B conditional rescue.
 
-Construct a Gaussian lagged regression with two true parents X1 and X2 whose
-same-time source innovations have correlation rho.  The target is
+Two true lagged parents keep fixed nonzero coefficients throughout:
 
-    Y_t = beta * X1_{t-1} + gamma(delta) * X2_{t-1} + noise,
+    Y_t = beta * X1_{t-1} + gamma * X2_{t-1} + noise.
 
-with
+The standardized source innovations have correlation rho.  Therefore
 
-    gamma(delta) = -(beta / rho) * (1 - delta).
+    Cov(X1, Y) = beta + gamma * rho.
 
-For standardized sources, Cov(X1, Y) = beta * delta.  Thus:
-- delta=1: X1 is strongly marginally visible;
-- delta->0: X1 becomes marginally hidden;
-- delta=0: X1 has exactly zero population marginal covariance with Y while its
-  conditional coefficient given X2 remains beta.
+With beta > 0 and gamma < 0, increasing rho toward
 
-This isolates the theoretical role of conditional rescue without changing the
-structural parent coefficient beta.
+    rho_cancel = -beta / gamma
+
+drives the marginal association of X1 to zero while both structural parent
+coefficients remain unchanged.  Conditional on X2, X1 retains its structural
+coefficient beta.
+
+This cleanly separates marginal visibility from conditional visibility and
+tests the role of Path-B's one-pass conditional rescue.
 """
 
 import argparse
@@ -38,18 +39,18 @@ from experiments.path_b_screen_frontier_v2 import (
 
 
 def suppression_series(
-    n_nodes=20,
-    T=300,
-    beta=0.2,
+    n_nodes=50,
+    T=200,
+    beta=0.12,
+    gamma=-0.15,
     rho=0.8,
-    delta=0.0,
-    noise_scale=0.1,
+    noise_scale=0.15,
     seed=0,
 ):
     if n_nodes < 3:
         raise ValueError("n_nodes must be at least 3")
-    if not 0 < abs(rho) < 1:
-        raise ValueError("|rho| must be in (0,1)")
+    if not 0 <= abs(rho) < 1:
+        raise ValueError("|rho| must be in [0,1)")
 
     rng = np.random.default_rng(seed)
     series = np.zeros((T, n_nodes), dtype=float)
@@ -62,7 +63,6 @@ def suppression_series(
     for j in range(3, n_nodes):
         series[:, j] = rng.standard_normal(T)
 
-    gamma = -(beta / rho) * (1.0 - delta)
     target_noise = noise_scale * rng.standard_normal(T)
     for t in range(1, T):
         series[t, 0] = (
@@ -71,7 +71,7 @@ def suppression_series(
             + target_noise[t]
         )
 
-    return series, gamma
+    return series
 
 
 def _local_index(feature_names, source, lag=1):
@@ -85,18 +85,18 @@ def _one(
     n_nodes,
     T,
     beta,
+    gamma,
     rho,
-    delta,
     noise_scale,
     retention,
     seed,
 ):
-    series, gamma = suppression_series(
+    series = suppression_series(
         n_nodes=n_nodes,
         T=T,
         beta=beta,
+        gamma=gamma,
         rho=rho,
-        delta=delta,
         noise_scale=noise_scale,
         seed=seed,
     )
@@ -142,25 +142,37 @@ def _one(
             method="gaussian",
         )
     )
-    endpoint_conditioned_hidden = float(
-        conditional_mutual_information(
-            X[:, [j_hidden]],
-            Y,
-            X[:, sorted(endpoint)] if endpoint else None,
-            method="gaussian",
+
+    # The implemented rescue conditions on the whole endpoint.  This score is
+    # meaningful only when the hidden parent is actually absent from endpoint.
+    if j_hidden not in endpoint:
+        Z = X[:, sorted(endpoint)] if endpoint else None
+        endpoint_conditioned_hidden = float(
+            conditional_mutual_information(
+                X[:, [j_hidden]],
+                Y,
+                Z,
+                method="gaussian",
+            )
         )
-    )
+    else:
+        endpoint_conditioned_hidden = None
 
     return {
         "seed": seed,
-        "delta": delta,
-        "gamma": gamma,
+        "rho": rho,
         "hidden_in_endpoint": j_hidden in endpoint,
         "hidden_in_rescue": j_hidden in rescued,
         "revealer_in_endpoint": j_revealer in endpoint,
         "revealer_in_rescue": j_revealer in rescued,
         "both_parents_in_endpoint": {j_hidden, j_revealer}.issubset(endpoint),
         "both_parents_in_rescue": {j_hidden, j_revealer}.issubset(rescued),
+        "rescue_hidden_given_endpoint_miss": (
+            (j_hidden in rescued) if j_hidden not in endpoint else None
+        ),
+        "revealer_present_when_hidden_missed": (
+            (j_revealer in endpoint) if j_hidden not in endpoint else None
+        ),
         "endpoint_size": len(endpoint),
         "rescued_count": int(diag["rescued"]),
         "screen_size": len(rescued),
@@ -172,12 +184,15 @@ def _one(
 
 
 def _summary(rows):
-    def rate(key):
-        return float(np.mean([bool(r[key]) for r in rows]))
+    def rate(key, conditional=False):
+        vals = [r[key] for r in rows if r[key] is not None]
+        return float(np.mean([bool(v) for v in vals])) if vals else None
 
     def med(key):
-        return float(np.median([float(r[key]) for r in rows]))
+        vals = [r[key] for r in rows if r[key] is not None]
+        return float(np.median(vals)) if vals else None
 
+    misses = [r for r in rows if not r["hidden_in_endpoint"]]
     return {
         "seeds": len(rows),
         "hidden_endpoint_recall": rate("hidden_in_endpoint"),
@@ -186,11 +201,19 @@ def _summary(rows):
         "revealer_rescue_recall": rate("revealer_in_rescue"),
         "both_endpoint_recall": rate("both_parents_in_endpoint"),
         "both_rescue_recall": rate("both_parents_in_rescue"),
+        "hidden_endpoint_miss_count": len(misses),
+        "rescue_success_given_hidden_endpoint_miss": rate(
+            "rescue_hidden_given_endpoint_miss"
+        ),
+        "revealer_present_given_hidden_endpoint_miss": rate(
+            "revealer_present_when_hidden_missed"
+        ),
         "median_marginal_info_hidden": med("marginal_info_hidden"),
+        "median_marginal_info_revealer": med("marginal_info_revealer"),
         "median_conditional_info_hidden_given_revealer": med(
             "conditional_info_hidden_given_revealer"
         ),
-        "median_conditional_info_hidden_given_endpoint": med(
+        "median_conditional_info_hidden_given_endpoint_on_misses": med(
             "conditional_info_hidden_given_endpoint"
         ),
         "mean_endpoint_size": float(
@@ -203,24 +226,24 @@ def _summary(rows):
 
 
 def run(
-    n_nodes=20,
-    T=300,
-    beta=0.2,
-    rho=0.8,
-    deltas=(0.0, 0.05, 0.10, 0.25, 0.50, 1.0),
-    noise_scale=0.1,
+    n_nodes=50,
+    T=200,
+    beta=0.12,
+    gamma=-0.15,
+    rhos=(0.0, 0.2, 0.4, 0.6, 0.7, 0.75, 0.8),
+    noise_scale=0.15,
     retention=0.40,
     seeds=20,
 ):
     cells = []
-    for delta in deltas:
+    for rho in rhos:
         rows = [
             _one(
                 n_nodes,
                 T,
                 beta,
+                gamma,
                 rho,
-                delta,
                 noise_scale,
                 retention,
                 seed,
@@ -229,8 +252,9 @@ def run(
         ]
         cells.append(
             {
-                "delta": delta,
-                "population_marginal_cov_hidden": beta * delta,
+                "rho": rho,
+                "population_marginal_cov_hidden": beta + gamma * rho,
+                "population_marginal_cov_revealer": beta * rho + gamma,
                 "summary": _summary(rows),
                 "rows": rows,
             }
@@ -240,8 +264,9 @@ def run(
             "n_nodes": n_nodes,
             "T": T,
             "beta": beta,
-            "rho": rho,
-            "deltas": list(deltas),
+            "gamma": gamma,
+            "rho_cancel": -beta / gamma,
+            "rhos": list(rhos),
             "noise_scale": noise_scale,
             "retention": retention,
             "seeds": seeds,
@@ -252,17 +277,17 @@ def run(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--n-nodes", type=int, default=20)
-    parser.add_argument("--T", type=int, default=300)
-    parser.add_argument("--beta", type=float, default=0.2)
-    parser.add_argument("--rho", type=float, default=0.8)
+    parser.add_argument("--n-nodes", type=int, default=50)
+    parser.add_argument("--T", type=int, default=200)
+    parser.add_argument("--beta", type=float, default=0.12)
+    parser.add_argument("--gamma", type=float, default=-0.15)
     parser.add_argument(
-        "--deltas",
+        "--rhos",
         type=float,
         nargs="+",
-        default=[0.0, 0.05, 0.10, 0.25, 0.50, 1.0],
+        default=[0.0, 0.2, 0.4, 0.6, 0.7, 0.75, 0.8],
     )
-    parser.add_argument("--noise-scale", type=float, default=0.1)
+    parser.add_argument("--noise-scale", type=float, default=0.15)
     parser.add_argument("--retention", type=float, default=0.40)
     parser.add_argument("--seeds", type=int, default=20)
     args = parser.parse_args()
@@ -273,8 +298,8 @@ def main():
                 n_nodes=args.n_nodes,
                 T=args.T,
                 beta=args.beta,
-                rho=args.rho,
-                deltas=tuple(args.deltas),
+                gamma=args.gamma,
+                rhos=tuple(args.rhos),
                 noise_scale=args.noise_scale,
                 retention=args.retention,
                 seeds=args.seeds,
