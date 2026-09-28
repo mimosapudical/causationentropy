@@ -1,4 +1,5 @@
 name: Path B theory audits
+# Focused theorem-facing diagnostics; intentionally separate from the full Path-B CI.
 
 on:
   push:
