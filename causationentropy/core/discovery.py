@@ -259,9 +259,20 @@ def discover_network(
             X_predictor = X_lagged[:, [s]]  # predictor at this lag
             Y_target = Y  # target variable
 
-            # Conditioning set: all other selected predictors for this target
+            # Conditioning set: standard oCSE must retain the target's
+            # initial lag history in reporting, just as in forward/backward.
             other_selected = [idx for idx in S if idx != s]
-            Z_cond = X_lagged[:, other_selected] if other_selected else None
+            Z_selected = (
+                X_lagged[:, other_selected] if other_selected else None
+            )
+            if method == "standard":
+                Z_cond = (
+                    Z_init
+                    if Z_selected is None
+                    else np.hstack((Z_init, Z_selected))
+                )
+            else:
+                Z_cond = Z_selected
 
             # Compute conditional mutual information
             cmi = conditional_mutual_information(
@@ -319,7 +330,15 @@ def discover_network(
                     continue
                 src_var, src_lag = feature_names[cand]
                 X_predictor = X_lagged[:, [cand]]
-                Z_cond = X_lagged[:, S] if S else None
+                Z_selected = X_lagged[:, S] if S else None
+                if method == "standard":
+                    Z_cond = (
+                        Z_init
+                        if Z_selected is None
+                        else np.hstack((Z_init, Z_selected))
+                    )
+                else:
+                    Z_cond = Z_selected
 
                 cmi = conditional_mutual_information(
                     X_predictor,
