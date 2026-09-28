@@ -13,15 +13,14 @@ import contextlib
 import io
 import json
 import time
+from unittest.mock import patch
 
 import networkx as nx
 import numpy as np
 
 from causationentropy import discover_network
-from causationentropy.core.discovery import (
-    shuffle_test,
-    standard_optimal_causation_entropy,
-)
+import causationentropy.core.discovery as discovery_module
+from causationentropy.core.discovery import standard_optimal_causation_entropy
 from causationentropy.core.information.conditional_mutual_information import (
     conditional_mutual_information,
 )
@@ -34,6 +33,53 @@ from experiments.path_b_screen_frontier_v2 import (
     endpoint_plus_conditional_rescue,
     lagged_design,
 )
+
+
+@contextlib.contextmanager
+def discovery_work_counter():
+    """Count dominant exact-oCSE work without changing statistical decisions."""
+    counts = {
+        "forward_observed_cmi_scores": 0,
+        "shuffle_tests": 0,
+        "shuffle_cmi_evaluations": 0,
+    }
+    original_scores = discovery_module._candidate_cmi_values
+    original_shuffle = discovery_module.shuffle_test
+
+    def counted_scores(
+        X_full,
+        candidates,
+        Y,
+        Z,
+        information,
+        metric,
+        k_means,
+        bandwidth,
+        reuse_gaussian_context=False,
+    ):
+        counts["forward_observed_cmi_scores"] += len(candidates)
+        return original_scores(
+            X_full,
+            candidates,
+            Y,
+            Z,
+            information,
+            metric,
+            k_means,
+            bandwidth,
+            reuse_gaussian_context=reuse_gaussian_context,
+        )
+
+    def counted_shuffle(*args, **kwargs):
+        n_shuffles = int(kwargs.get("n_shuffles", 500))
+        counts["shuffle_tests"] += 1
+        counts["shuffle_cmi_evaluations"] += n_shuffles
+        return original_shuffle(*args, **kwargs)
+
+    with patch.object(discovery_module, "_candidate_cmi_values", counted_scores), patch.object(
+        discovery_module, "shuffle_test", counted_shuffle
+    ):
+        yield counts
 
 
 def edge_set(graph):
@@ -104,60 +150,66 @@ def run_full_standard_matched(
     support_by_target = {}
 
     start_total = time.perf_counter()
-    for target in range(n_nodes):
-        Y = Y_all[:, [target]]
-        rng = np.random.default_rng(seed * 10000 + target)
-        Z_init = np.column_stack(
-            [
-                series[max_lag - lag : series.shape[0] - lag, target]
-                for lag in range(1, max_lag + 1)
-            ]
-        )
-        support = standard_optimal_causation_entropy(
-            X,
-            Y,
-            Z_init,
-            rng,
-            alpha1=alpha,
-            alpha2=alpha,
-            n_shuffles=n_shuffles,
-            information=information,
-            reuse_gaussian_context=(information == "gaussian"),
-        )
-        support = [int(idx) for idx in support]
-        support_by_target[target] = set(support)
-
-        for global_idx in support:
-            source, lag = feature_names[global_idx]
-            others = [idx for idx in support if idx != global_idx]
-            Z_cond = X[:, others] if others else None
-            X_predictor = X[:, [global_idx]]
-            cmi = conditional_mutual_information(
-                X_predictor,
-                Y,
-                Z_cond,
-                method=information,
+    with discovery_work_counter() as work:
+        for target in range(n_nodes):
+            Y = Y_all[:, [target]]
+            rng = np.random.default_rng(seed * 10000 + target)
+            Z_init = np.column_stack(
+                [
+                    series[max_lag - lag : series.shape[0] - lag, target]
+                    for lag in range(1, max_lag + 1)
+                ]
             )
-            test_result = shuffle_test(
-                X_predictor,
+            support = standard_optimal_causation_entropy(
+                X,
                 Y,
-                Z_cond,
-                cmi,
-                alpha=alpha,
-                rng=rng,
+                Z_init,
+                rng,
+                alpha1=alpha,
+                alpha2=alpha,
                 n_shuffles=n_shuffles,
                 information=information,
                 reuse_gaussian_context=(information == "gaussian"),
             )
-            graph.add_edge(
-                f"X{source}",
-                f"X{target}",
-                lag=lag,
-                cmi=cmi,
-                p_value=test_result["P_value"],
-            )
+            support = [int(idx) for idx in support]
+            support_by_target[target] = set(support)
 
-    return graph, time.perf_counter() - start_total, support_by_target
+            for global_idx in support:
+                source, lag = feature_names[global_idx]
+                others = [idx for idx in support if idx != global_idx]
+                Z_cond = X[:, others] if others else None
+                X_predictor = X[:, [global_idx]]
+                cmi = conditional_mutual_information(
+                    X_predictor,
+                    Y,
+                    Z_cond,
+                    method=information,
+                )
+                test_result = discovery_module.shuffle_test(
+                    X_predictor,
+                    Y,
+                    Z_cond,
+                    cmi,
+                    alpha=alpha,
+                    rng=rng,
+                    n_shuffles=n_shuffles,
+                    information=information,
+                    reuse_gaussian_context=(information == "gaussian"),
+                )
+                graph.add_edge(
+                    f"X{source}",
+                    f"X{target}",
+                    lag=lag,
+                    cmi=cmi,
+                    p_value=test_result["P_value"],
+                )
+
+    return (
+        graph,
+        time.perf_counter() - start_total,
+        support_by_target,
+        dict(work),
+    )
 
 
 def run_path_b_v2(
@@ -182,83 +234,88 @@ def run_path_b_v2(
     screen_by_target = {}
     support_by_target = {}
     start_total = time.perf_counter()
+    screen_marginal_cmi_scores = 0
+    screen_rescue_cmi_scores = 0
 
-    for target in range(n_nodes):
-        Y = Y_all[:, [target]]
-        rng = np.random.default_rng(seed * 10000 + target)
+    with discovery_work_counter() as work:
+        for target in range(n_nodes):
+            Y = Y_all[:, [target]]
+            rng = np.random.default_rng(seed * 10000 + target)
 
-        start_screen = time.perf_counter()
-        screened, diag = endpoint_plus_conditional_rescue(
-            X,
-            Y,
-            rng,
-            retention=retention,
-            information=information,
-        )
-        screen_seconds += time.perf_counter() - start_screen
-        screened_total += len(screened)
-        endpoint_total += diag["endpoint_size"]
-        rescued_total += diag["rescued"]
-        screen_by_target[target] = set(int(idx) for idx in screened)
-
-        if not screened:
-            support_by_target[target] = set()
-            continue
-
-        Z_init = np.column_stack(
-            [
-                series[max_lag - lag : series.shape[0] - lag, target]
-                for lag in range(1, max_lag + 1)
-            ]
-        )
-        refined_local = standard_optimal_causation_entropy(
-            X[:, screened],
-            Y,
-            Z_init,
-            rng,
-            alpha1=alpha,
-            alpha2=alpha,
-            n_shuffles=n_shuffles,
-            information=information,
-            reuse_gaussian_context=(information == "gaussian"),
-        )
-        support_by_target[target] = {
-            int(screened[int(local_idx)]) for local_idx in refined_local
-        }
-        for local_idx in refined_local:
-            global_idx = screened[int(local_idx)]
-            source, lag = feature_names[global_idx]
-
-            # Match discover_network's output-stage work so runtime comparisons
-            # do not favor Path B by omitting final edge CMI/p-value reporting.
-            other_local = [idx for idx in refined_local if idx != local_idx]
-            other_global = [screened[int(idx)] for idx in other_local]
-            Z_cond = X[:, other_global] if other_global else None
-            X_predictor = X[:, [global_idx]]
-            cmi = conditional_mutual_information(
-                X_predictor,
+            start_screen = time.perf_counter()
+            screened, diag = endpoint_plus_conditional_rescue(
+                X,
                 Y,
-                Z_cond,
-                method=information,
+                rng,
+                retention=retention,
+                information=information,
             )
-            test_result = shuffle_test(
-                X_predictor,
+            screen_seconds += time.perf_counter() - start_screen
+            screened_total += len(screened)
+            endpoint_total += diag["endpoint_size"]
+            rescued_total += diag["rescued"]
+            screen_marginal_cmi_scores += X.shape[1]
+            screen_rescue_cmi_scores += max(0, X.shape[1] - diag["endpoint_size"])
+            screen_by_target[target] = set(int(idx) for idx in screened)
+
+            if not screened:
+                support_by_target[target] = set()
+                continue
+
+            Z_init = np.column_stack(
+                [
+                    series[max_lag - lag : series.shape[0] - lag, target]
+                    for lag in range(1, max_lag + 1)
+                ]
+            )
+            refined_local = standard_optimal_causation_entropy(
+                X[:, screened],
                 Y,
-                Z_cond,
-                cmi,
-                alpha=alpha,
-                rng=rng,
+                Z_init,
+                rng,
+                alpha1=alpha,
+                alpha2=alpha,
                 n_shuffles=n_shuffles,
                 information=information,
                 reuse_gaussian_context=(information == "gaussian"),
             )
-            graph.add_edge(
-                f"X{source}",
-                f"X{target}",
-                lag=lag,
-                cmi=cmi,
-                p_value=test_result["P_value"],
-            )
+            support_by_target[target] = {
+                int(screened[int(local_idx)]) for local_idx in refined_local
+            }
+            for local_idx in refined_local:
+                global_idx = screened[int(local_idx)]
+                source, lag = feature_names[global_idx]
+
+                # Match discover_network's output-stage work so runtime comparisons
+                # do not favor Path B by omitting final edge CMI/p-value reporting.
+                other_local = [idx for idx in refined_local if idx != local_idx]
+                other_global = [screened[int(idx)] for idx in other_local]
+                Z_cond = X[:, other_global] if other_global else None
+                X_predictor = X[:, [global_idx]]
+                cmi = conditional_mutual_information(
+                    X_predictor,
+                    Y,
+                    Z_cond,
+                    method=information,
+                )
+                test_result = discovery_module.shuffle_test(
+                    X_predictor,
+                    Y,
+                    Z_cond,
+                    cmi,
+                    alpha=alpha,
+                    rng=rng,
+                    n_shuffles=n_shuffles,
+                    information=information,
+                    reuse_gaussian_context=(information == "gaussian"),
+                )
+                graph.add_edge(
+                    f"X{source}",
+                    f"X{target}",
+                    lag=lag,
+                    cmi=cmi,
+                    p_value=test_result["P_value"],
+                )
 
     total_seconds = time.perf_counter() - start_total
     total_candidates = n_nodes * X.shape[1]
@@ -271,6 +328,9 @@ def run_path_b_v2(
         "rescued_candidates": rescued_total,
         "screened_candidates": screened_total,
         "total_candidates": total_candidates,
+        "screen_marginal_cmi_scores": screen_marginal_cmi_scores,
+        "screen_rescue_cmi_scores": screen_rescue_cmi_scores,
+        **dict(work),
         "screen_by_target": screen_by_target,
         "support_by_target": support_by_target,
     }
@@ -395,7 +455,12 @@ def run_case(
         }
     }
 
-    full_graph, full_runtime, full_support_by_target = run_full_standard_matched(
+    (
+        full_graph,
+        full_runtime,
+        full_support_by_target,
+        full_work,
+    ) = run_full_standard_matched(
         data,
         information,
         max_lag,
@@ -406,6 +471,7 @@ def run_case(
     result["standard"] = {
         **metrics(truth, edge_set(full_graph), n_nodes, max_lag),
         "runtime_seconds": full_runtime,
+        **full_work,
     }
 
     for method in ("lasso", "information_lasso"):
