@@ -290,6 +290,8 @@ def discover_network(
             )
 
             if only_return_significant:
+                if not test_result["Pass"]:
+                    continue
                 G.add_edge(
                     var_names[src_var],
                     var_names[i],
@@ -304,7 +306,7 @@ def discover_network(
                     lag=src_lag,
                     cmi=cmi,
                     p_value=test_result["P_value"],
-                    significant=True,
+                    significant=bool(test_result["Pass"]),
                 )
 
         if not only_return_significant:
@@ -351,7 +353,7 @@ def discover_network(
                     lag=src_lag,
                     cmi=cmi,
                     p_value=test_result["P_value"],
-                    significant=False,
+                    significant=bool(test_result["Pass"]),
                 )
 
     return G
