@@ -87,93 +87,154 @@ after the package-level Poisson tests and integration benchmark pass.
 ### B. Gaussian constant-feature singularity
 
 core/linalg.py::correlation_log_determinant maps singular/non-finite
-correlation determinants to -1000.  The epsilon argument is currently unused.
+correlation determinants to -1000.
 
-For scalar constant X and random scalar Y:
+For scalar constant X and random scalar Y, the current Gaussian MI path can
+therefore return about 500 nats even though a deterministic predictor carries
+zero mutual information.
 
-- the scalar X correlation path returns 0;
-- the joint (X,Y) correlation matrix is non-finite and maps to -1000;
-- Gaussian MI becomes approximately 0.5 * (0 + 0 - (-1000)) = 500 nats.
-
-A formula-level local reproduction with 500 samples returned:
+Formula-level reproduction:
 
 - constant X vs random Y: 500.0 nats;
-- independent random X vs Y: about 0.000322 nats;
-- identical continuous X=Y: 500.0 nats because it hits the same sentinel.
+- independent random X vs Y: about 0.000322 nats.
 
-The identical-variable case is genuinely singular/infinite in the ideal
-continuous model; the problematic diagnostic is that a deterministic constant
-feature receives the same sentinel-driven score.
+A dedicated experimental correction now exists:
 
-A deterministic constant predictor should not become an extremely informative
-Path-A feature.
+    experiment/gaussian-constant-feature-fix-v1
 
-This is directly relevant to Information-LASSO because Path A obtains its
-weights from marginal Gaussian information scores.
+The correction is deliberately narrow:
 
-Fork diagnostic:
+- remove only dimensions that are exactly constant before constructing the
+  correlation matrix;
+- preserve near-constant, highly correlated, and other nonconstant singular
+  cases;
+- leave the existing singular sentinel behavior untouched for those cases.
 
-    experiments/gaussian_constant_feature_audit.py
+This fixes both Gaussian MI and CMI because they share
+correlation_log_determinant.
 
-Recommended next action:
+Regression coverage now includes:
 
-- first measure how often zero/near-zero variance columns occur in realistic
-  data and how they affect Path-A support;
-- likely fixes are either zero-variance filtering at the Path-A boundary or a
-  principled regularized Gaussian log-determinant;
-- do not replace -1000 with another arbitrary sentinel.
+- constant predictor MI = 0;
+- adding a constant nuisance dimension leaves MI unchanged;
+- constant predictor CMI = 0;
+- adding a constant conditioning dimension leaves CMI unchanged.
 
-This is a correctness/numerical-stability change and may alter selected support.
+Validation entry point:
 
-### C. Standard oCSE retests the target-history columns already in Z_init
+    python -m experiments.run_gaussian_constant_feature_fix_v1
 
-discover_network constructs X_lagged from every variable and lag.  For standard
-oCSE it also places the target's own lagged columns in Z_init, while those same
-columns remain candidates in X_lagged.
+This is a correctness/numerical-stability change and is a strong candidate for
+a small upstream PR once focused + full pytest pass.
 
-This can create tests of the form
+### C. Standard oCSE conditioning is internally inconsistent
 
-    I(X_target(t-lag); Y | ..., X_target(t-lag), ...)
+There are two layers.
 
-which are redundant and can create singular Gaussian correlation matrices /
-NaNs.
+#### C1. Target-history candidates are duplicated
 
-No existing upstream issue/PR was found in the audit for this exact point.
+For target i, standard discover_network already puts
 
-Potential fix:
+    X_i(t-1), ..., X_i(t-max_lag)
 
-- remove candidate columns that are already represented identically in Z_init,
-  or represent the conditioning/candidate universe explicitly so duplicates
-  cannot occur.
+into Z_init, while the same columns remain in the candidate universe.
 
-Caution: removing candidates changes the number/order of permutation tests and
-therefore the shared RNG stream under finite shuffles.  It is statistically
-cleaner but is not bit-identical legacy behavior.
+This creates redundant tests of
 
-### D. only_return_significant is ambiguous for LASSO / Information-LASSO
+    I(X_i(t-lag); Y_i(t) | ..., X_i(t-lag), ...)
 
-discover_network computes a final shuffle test for selected edges, but when
-only_return_significant=True it still adds each edge in S without checking the
-new test_result["Pass"].
+and can make correlation-based estimators singular.
 
-For standard/alternative oCSE, S already went through shuffle-based selection.
-For ordinary LASSO and Information-LASSO, S is coefficient support rather than
-a significance-filtered set.
+A narrow experimental correction exists:
 
-Therefore the public option name does not describe the same semantics across
-methods.
+    experiment/standard-self-history-dedup-v1
 
-No existing upstream issue/PR was found for this behavior.
+It removes only target-history columns from the standard candidate universe and
+maps selected local indices back to the full lagged-feature indices.
+Alternative/LASSO/Information-LASSO are unchanged.
 
-Recommended next action:
+#### C2. Z_init disappears after forward selection
 
-- decide API semantics before changing code;
-- if only_return_significant should mean final post-hoc filtering for every
-  method, add a method-agnostic regression test;
-- otherwise rename/document it so Path-A benchmark interpretation is explicit.
+The deeper problem is that the current standard pipeline changes its
+conditioning question between stages:
 
-A fix may change standalone Path-A graph metrics and should not be mixed into
-the current Path-A PR without maintainer agreement.
+- forward selection uses Z_init;
+- backward elimination drops Z_init;
+- final selected-edge CMI/p-value reporting drops Z_init;
+- report-all edge statistics also drop Z_init.
+
+A direct Gaussian counterexample shows why this matters. With
+
+    Z ~ N(0,1)
+    X = Z + 0.2 eps_x
+    Y = Z + 0.2 eps_y
+
+a formula-level reproduction gave approximately:
+
+- I(X;Y) = 1.243;
+- marginal 95% shuffle threshold = 0.00368;
+- I(X;Y|Z) = 0.00152;
+- conditional 95% shuffle threshold = 0.00392.
+
+So the candidate passes when the fixed baseline is dropped but fails when it is
+retained.
+
+A layered experimental correction exists:
+
+    experiment/standard-conditioning-consistency-v1
+
+That branch is based on the self-history de-dup branch and additionally:
+
+- extends backward(..., Z_init=None);
+- passes Z_init from standard oCSE into backward;
+- preserves Z_init in final selected-edge reporting;
+- preserves Z_init in report-all statistics;
+- leaves alternative oCSE with Z_init=None.
+
+Validation entry point:
+
+    python -m experiments.run_standard_conditioning_consistency_v1
+
+This branch changes the statistical semantics of standard oCSE and therefore
+must pass the repository's existing standard-Gaussian integration test plus the
+full default suite before any upstream proposal.
+
+### D. only_return_significant violates its documented contract
+
+discover_network documents only_return_significant=True as returning only
+statistically significant links.
+
+The implementation already computes a final shuffle test for every selected
+edge but ignores test_result["Pass"]:
+
+- True mode adds the selected edge unconditionally;
+- report-all mode marks every selected edge significant=True unconditionally;
+- non-selected candidates are marked significant=False unconditionally even
+  though a final shuffle decision was just computed.
+
+This is especially visible for LASSO and Information-LASSO because coefficient
+support is not itself a shuffle significance decision.
+
+A minimal experimental correction exists:
+
+    experiment/only-return-significant-fix-v1
+
+Selection is unchanged. Only graph reporting changes:
+
+- True mode emits a selected edge only if its final shuffle Pass is true;
+- False mode sets significant=bool(test_result["Pass"]) for every reported
+  candidate.
+
+Focused regression forces a LASSO-selected edge to receive final Pass=False and
+checks both public modes.
+
+Validation entry point:
+
+    python -m experiments.run_only_return_significant_fix_v1
+
+This can change standalone Path-A/LASSO graph metrics, so it should remain
+separate from the existing Path-A PR and be discussed as an API/reporting
+correction after full pytest passes.
 
 ### E. Path-A information-weight normalization has avoidable absolute scaling
 
@@ -274,49 +335,70 @@ number of expensive conditional-information tests.
 
 ### Priority 1 — finish Path B validation
 
-Run the cross-platform validation:
+Run:
 
     python -m experiments.run_path_b_v2 --mode quick
 
-then, after all gates pass:
+and, only after quick passes:
 
     python -m experiments.run_path_b_v2 --mode full
 
-The primary question is whether the approximately 40% screen continues to
-preserve the forward closure and final graph as N grows to 20/50/100/200 while
-total CMI work falls materially.
+The paper question remains whether the roughly 40% screen preserves the full
+forward closure/final graph while total CMI work falls materially as N scales
+through 20/50/100/200.
 
-### Priority 2 — decide the two Path-A follow-ups from evidence
+### Priority 2 — validate the two smallest correctness fixes
+
+Run independently:
+
+    git checkout experiment/gaussian-constant-feature-fix-v1
+    python -m experiments.run_gaussian_constant_feature_fix_v1
+
+    git checkout experiment/only-return-significant-fix-v1
+    python -m experiments.run_only_return_significant_fix_v1
+
+These have the narrowest diffs and the clearest local contracts.
+
+### Priority 3 — validate standard-oCSE conditioning in two layers
+
+First the narrow de-dup:
+
+    git checkout experiment/standard-self-history-dedup-v1
+    python -m experiments.run_standard_self_history_dedup_v1
+
+Then the full conditioning-consistency experiment:
+
+    git checkout experiment/standard-conditioning-consistency-v1
+    python -m experiments.run_standard_conditioning_consistency_v1
+
+Do not collapse these into one upstream PR until the second layer's effect on
+the repository integration benchmark is known.
+
+### Priority 4 — validate Poisson conditional marginalization
+
+Run:
+
+    git checkout experiment/poisson-marginalization-fix-v1
+    python -m experiments.run_poisson_marginalization_fix_v1
+
+The mathematical defect is stronger than the other estimator audits, but the
+code change is larger and must satisfy the repository's existing Poisson
+TPR/FPR gates before upstreaming.
+
+### Priority 5 — Path-A weight normalization remains diagnostic only
 
 Read:
 
-- 08_path_a_weight_normalization.json
-- 08_gaussian_constant_feature.json
+- 08_path_a_weight_normalization.json.
 
-Only create a Path-A follow-up PR if the audits show a clear numerical or
-correctness gain without introducing a new modeling choice.
+Do not change Path A's normalization unless support equality remains essentially
+complete while numerical warnings or failures improve.
 
-### Priority 3 — Poisson conditional-marginalization correction
+### Priority 6 — deeper Gaussian exact fast path only if profiling justifies it
 
-Read:
-
-- 08_poisson_rate_structure.json;
-- 08_poisson_conditional_marginalization.json.
-
-The paper mathematics has now been checked: correlation scaling is intentional,
-while the conditional marginalization is the actual defect. Validate the
-separate branch experiment/poisson-marginalization-fix-v1 against the full
-Poisson unit/integration tests before preparing any upstream PR.
-
-### Priority 4 — deeper Gaussian exact fast path
-
-After the simple context cache is validated, the next mathematically grounded
-performance step is shared QR/Cholesky/residualization for partial correlations.
-Classic work by Delosme, Ipsen & Paige shows that partial correlations can be
-computed efficiently from shared factorizations.
-
-This should only be pursued if the scaling table shows Gaussian CMI arithmetic,
-rather than permutation count, remains the dominant bottleneck.
+After Path B scaling is measured, consider shared QR/Cholesky/residualization
+for Gaussian partial correlations only if Gaussian CMI arithmetic remains a
+dominant cost after permutation-count reduction.
 
 ## 6. What not to do now
 
