@@ -81,8 +81,18 @@ def correlation_log_determinant(A, epsilon=1e-10):
     numpy.corrcoef : Compute correlation coefficients
     numpy.linalg.slogdet : Compute sign and log-determinant
     """
+    A = np.asarray(A)
     if A.shape[1] == 0:
         return 0.0
+
+    # Deterministic constant dimensions carry no mutual information and make
+    # Pearson correlation undefined. Remove only exactly constant columns;
+    # near-constant and highly correlated nonconstant columns are preserved.
+    varying = np.any(A != A[[0], :], axis=0)
+    A = A[:, varying]
+    if A.shape[1] == 0:
+        return 0.0
+
     C = np.corrcoef(A.T)
     if C.ndim == 0:
         return 0.0
