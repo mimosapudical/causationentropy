@@ -6,7 +6,7 @@ on:
       - experiment/path-b-benchmark-v2
   pull_request:
     branches:
-      - feature/information-lasso-path-a
+      - experiment/path-b-ci-base
   workflow_dispatch:
 
 jobs:
