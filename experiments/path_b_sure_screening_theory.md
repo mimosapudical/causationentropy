@@ -662,3 +662,80 @@ This certificate uses the actual chosen BIC penalty and observed design.  It
 does not require iid samples, a noise model, an RE condition, or asymptotic BIC
 consistency.  Its limitation is the full-rank requirement (n>p), so it
 complements rather than replaces the high-dimensional RE/time-series theorem.
+
+
+## 13. CMI-evaluation complexity of screening before oCSE
+
+The relevant computational unit is a conditional-mutual-information
+evaluation, especially the evaluations inside permutation tests.
+
+Let:
+
+- (p) be the full candidate count for one target;
+- (d=|W|=ho p) be the screened candidate count;
+- (k) be the number of accepted forward variables;
+- (R) be the number of permutation shuffles.
+
+The optimized `standard_forward` implementation evaluates every currently
+live candidate's observed CMI once per conditioning state.  Failed significance
+tests do not trigger a re-evaluation of all observed scores until a candidate
+is accepted and the conditioning set changes.
+
+If (r_t) is the number of live candidates at the start of forward state
+(t), the number of observed-score CMI evaluations is exactly
+
+[
+N_{mathrm{obs}}
+=
+sum_t r_t.
+]
+
+With at most (k) accepted variables plus a possible terminal state,
+
+[
+N_{mathrm{obs}}
+le
+(k+1)p,
+]
+
+and the worst dense case is (O(p^2)).
+
+Each significance test performs (R) additional null-CMI evaluations.
+Therefore, if (T_{mathrm{sig}}) candidates are actually subjected to a
+forward or backward significance test,
+
+[
+N_{mathrm{shuffle}}
+=
+R,T_{mathrm{sig}}.
+]
+
+For a screened universe of size (d=ho p), the analogous bounds replace
+(p) by (d).  In a sparse regime where the accepted-set size remains small
+relative to the candidate universe, the observed-score term therefore improves
+approximately linearly in (ho), while worst-case dense forward scoring can
+improve quadratically, (O(d^2/p^2)=O(ho^2)).
+
+The Path-B screen itself uses no permutation tests:
+
+1. (p) marginal-information evaluations for Information-LASSO weights;
+2. one conditional-CMI score for each candidate excluded by the Path-A
+   endpoint in the one-shot rescue;
+3. the weighted-Lasso solve.
+
+Hence the extra information-estimation work is (O(p)), while the expensive
+permutation component is moved from the full candidate universe to the
+screened universe.
+
+This yields the intended asymptotic tradeoff:
+
+[
+	ext{find the smallest }ho
+	ext{ for which }
+P(N_Isubseteq W_ho)
+	ext{ remains high}.
+]
+
+The true-parent retention frontier is therefore not merely a hyperparameter
+sweep; it empirically estimates the computational/statistical operating point
+predicted by the screened-oCSE theory.
