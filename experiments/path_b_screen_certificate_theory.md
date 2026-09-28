@@ -237,3 +237,147 @@ For higher-order lag models or explicit target-history conditioning, the clean
 paper notation should use the standard expanded first-order state
 representation noted by Sun et al.; the screen is then a subset of lagged
 state coordinates and the same argument applies coordinate-wise.
+
+
+## 8. Theorem target: weighted-screen containment + restricted-oCSE consistency
+
+The theorem should be stated for **support containment**, not exact weighted-LASSO
+model selection.
+
+Consider the Gaussian linearized target equation
+
+[
+Y = X\beta^\star + \varepsilon,
+\qquad
+S = \operatorname{supp}(\beta^\star),
+\qquad |S|=s.
+]
+
+Let the information weights be represented only up to a common positive scale:
+
+[
+q_j \propto I(X_j;Y), \qquad q_j \ge 0,
+]
+
+and define
+
+[
+D_q=\operatorname{diag}(q_1,\ldots,q_p),
+\qquad
+Z=XD_q,
+\qquad
+\gamma^\star=D_q^{-1}\beta^\star.
+]
+
+On coordinates with positive weights, Information-LASSO is ordinary Lasso in
+the transformed design:
+
+[
+\widehat\gamma
+\in
+\arg\min_\gamma
+\frac{1}{2n}\|Y-Z\gamma\|_2^2
++\lambda\|\gamma\|_1.
+]
+
+A sufficient support-containment route is:
+
+1. **True-support positive weighting.**
+   There is a constant (q_{\min}>0) such that
+
+   [
+   \min_{j\in S} q_j \ge q_{\min}.
+   ]
+
+   This is a marginal-faithfulness condition for the weighted first-stage
+   screen.  It is intentionally not assumed for the rescue theorem below.
+
+2. **Noise event.**
+
+   [
+   \|Z^T\varepsilon/n\|_\infty \le \lambda/2.
+   ]
+
+   For sub-Gaussian noise and normalized transformed columns this holds with
+   high probability for
+   (lambda\asymp\sigma\sqrt{\log(p)/n}).
+
+3. **Restricted-eigenvalue / compatibility condition.**
+   The transformed design (Z) has compatibility constant
+   (kappa(S)>0) on the usual Lasso cone.
+
+4. **Beta-min on the transformed coefficients.**
+   A conservative sufficient condition is
+
+   [
+   \gamma_{\min}
+   =
+   \min_{j\in S}|\gamma_j^\star|
+   >
+   C\frac{\sqrt{s}\lambda}{\kappa(S)^2},
+   ]
+
+   where (C) is the constant inherited from the chosen Lasso
+   (ell_2)-error bound.
+
+Under these conditions, the Lasso estimation error is too small to set any
+true transformed coefficient to zero, and therefore
+
+[
+S\subseteq\widehat S_{\mathrm{InfoLasso}}
+]
+
+on the stated high-probability event.
+
+This proposition deliberately avoids an irrepresentable condition because
+false positives are allowed at the screening stage.  It only needs a
+no-false-negative guarantee.
+
+Combining it with the restricted-candidate oCSE corollary gives the main
+screened-oCSE statement:
+
+[
+P(S\subseteq W_n)\to1
+\quad\text{and population-oCSE consistency}
+\quad\Longrightarrow\quad
+P(\widehat N_I^{\mathrm{restricted\ oCSE}}=N_I)\to1.
+]
+
+### Why rescue is theoretically necessary
+
+The condition (q_j>0) for every true parent cannot hold universally because
+conditional dependence is not monotone in the conditioning set.  A true parent
+can have zero marginal mutual information but positive conditional mutual
+information after a suitable revealing set is conditioned upon.
+
+The rescue theorem therefore needs a separate assumption:
+
+For every marginally hidden parent (j\in S\setminus W_0), there exists a
+revealing set (R_j\subseteq W_0) of bounded size such that
+
+[
+I(X_j;Y\mid R_j)\ge \eta_n
+]
+
+for a detectable signal level (eta_n), and the rescue stage evaluates a
+conditioning set containing such an (R_j).
+
+Under uniform concentration of the conditional-information estimator and a
+threshold below (eta_n), the rescue stage recovers all such hidden parents
+with high probability.
+
+This separates two assumptions cleanly:
+
+- weighted Lasso handles parents that are **marginally visible**;
+- conditional rescue handles parents that are **jointly visible but marginally
+  hidden**.
+
+The next theorem-facing experiment should therefore vary both:
+
+[
+\beta_{\min}\sqrt{n/\log p}
+\quad\text{and}\quad
+\text{marginal-visibility / suppression strength}.
+]
+
+The current beta-min phase-transition benchmark controls the first axis.
