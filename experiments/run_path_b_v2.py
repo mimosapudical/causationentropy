@@ -170,6 +170,17 @@ def main():
             text=True,
         )
 
+    if args.mode == "full":
+        print("   running full default pytest suite")
+        with (outdir / "02_full_pytest.txt").open("w", encoding="utf-8") as handle:
+            subprocess.run(
+                [sys.executable, "-m", "pytest", "-q"],
+                check=True,
+                stdout=handle,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+
     print("== [4/10] Screening frontier + stress diagnostics ==")
     run_command(
         python_module(
