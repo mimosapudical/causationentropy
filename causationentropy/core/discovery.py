@@ -218,11 +218,13 @@ def discover_network(
 
         Y = Y_all[:, [i]]  # shape: (T - max_lag, 1)
         candidate_ids = list(range(len(feature_names)))
+        base_conditioning = None
         if method == "standard":
             Z_init = []
             for tau in range(1, max_lag + 1):
                 Z_init.append(series[max_lag - tau : T - tau, i])  # lagged Y_i
             Z_init = np.column_stack(Z_init)  # shape: (T - max_lag, max_lag)
+            base_conditioning = Z_init
 
             # The target's own lagged columns are already present in Z_init.
             # Testing those identical columns again as candidate causes redundant
@@ -273,9 +275,17 @@ def discover_network(
             X_predictor = X_lagged[:, [s]]  # predictor at this lag
             Y_target = Y  # target variable
 
-            # Conditioning set: all other selected predictors for this target
+            # Conditioning set: standard mode keeps the target-history
+            # baseline throughout the complete selection/reporting pipeline.
             other_selected = [idx for idx in S if idx != s]
-            Z_cond = X_lagged[:, other_selected] if other_selected else None
+            conditioning_parts = []
+            if base_conditioning is not None:
+                conditioning_parts.append(base_conditioning)
+            if other_selected:
+                conditioning_parts.append(X_lagged[:, other_selected])
+            Z_cond = (
+                np.hstack(conditioning_parts) if conditioning_parts else None
+            )
 
             # Compute conditional mutual information
             cmi = conditional_mutual_information(
@@ -332,7 +342,16 @@ def discover_network(
                     continue
                 src_var, src_lag = feature_names[cand]
                 X_predictor = X_lagged[:, [cand]]
-                Z_cond = X_lagged[:, S] if S else None
+                conditioning_parts = []
+                if base_conditioning is not None:
+                    conditioning_parts.append(base_conditioning)
+                if S:
+                    conditioning_parts.append(X_lagged[:, S])
+                Z_cond = (
+                    np.hstack(conditioning_parts)
+                    if conditioning_parts
+                    else None
+                )
 
                 cmi = conditional_mutual_information(
                     X_predictor,
@@ -415,6 +434,10 @@ def standard_optimal_causation_entropy(
         Number of permutations for statistical testing.
     information : str, default='gaussian'
         Information measure estimator type.
+    Z_init : array-like of shape (T, p) or None, default=None
+        Fixed conditioning variables that remain present for every backward
+        elimination test. Standard oCSE uses lagged target history here;
+        alternative oCSE leaves this as None.
 
     Returns
     -------
@@ -437,6 +460,7 @@ def standard_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
+        Z_init=Z_init,
     )
 
     return S
@@ -825,6 +849,7 @@ def backward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
+    Z_init=None,
 ):
     r"""
     Backward elimination phase of optimal Causation Entropy.
@@ -878,8 +903,14 @@ def backward(
     S = copy.deepcopy(S_init)  # working copy
 
     for j in rng.permutation(S_init):
-        # conditioning set Z = S \ {j}
-        Z = X_full[:, [k for k in S if k != j]] if len(S) > 1 else None
+        # Conditioning set = fixed baseline plus S \ {j}.
+        other_selected = [k for k in S if k != j]
+        conditioning_parts = []
+        if Z_init is not None:
+            conditioning_parts.append(Z_init)
+        if other_selected:
+            conditioning_parts.append(X_full[:, other_selected])
+        Z = np.hstack(conditioning_parts) if conditioning_parts else None
 
         Xj = X_full[:, [j]]
         cmij = conditional_mutual_information(
