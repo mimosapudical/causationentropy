@@ -501,3 +501,95 @@ suppression/cancellation, in which case no marginal-information weighting
 scheme can have a nonvanishing parent-weight lower bound.  That case should be
 handled by the conditional/iterative screening component rather than hidden
 inside the one-shot Path-A theorem.
+
+
+## 11. A BIC-compatible finite-sample screening certificate when n > p
+
+The production Path-A BIC branch is used when the number of observations
+exceeds the number of candidate predictors plus one.  In this regime there is
+a simpler deterministic no-false-negative result that does **not** require the
+penalty to dominate the score noise.
+
+Center the weighted design and response so the intercept is removed, and let
+
+[
+G
+=
+rac{widetilde X^	opwidetilde X}{n}.
+]
+
+Assume (G) is invertible.  The Lasso KKT equations give
+
+[
+rac{widetilde X^	op
+(y-widetilde Xwidehat	heta)}{n}
+=
+lambda z,
+qquad
+|z|_inftyle1.
+]
+
+Using
+(y=widetilde X	heta^*+arepsilon),
+
+[
+G(widehat	heta-	heta^*)
+=
+rac{widetilde X^	oparepsilon}{n}
+-
+lambda z.
+]
+
+Therefore
+
+[
+|widehat	heta-	heta^*|_infty
+le
+|G^{-1}|_infty
+left(
+left|
+rac{widetilde X^	oparepsilon}{n}
+ight|_infty
++
+lambda
+ight).
+]
+
+Consequently, if
+
+[
+	heta_{min}
+=
+min_{jin S}|	heta_j^*|
+>
+|G^{-1}|_infty
+left(
+left|
+rac{widetilde X^	oparepsilon}{n}
+ight|_infty
++
+lambda
+ight),
+]
+
+then every true parent must have a nonzero fitted coefficient:
+
+[
+Ssubseteqoperatorname{supp}(widehat	heta).
+]
+
+This implication holds for **any realized nonnegative penalty**, including a
+penalty chosen by BIC, because it is simply the KKT system evaluated at the
+chosen solution.  No claim of BIC model-selection consistency is needed for
+this finite-sample screening certificate.
+
+This result is particularly well matched to the present implementation:
+
+- the (n>p+1) branch uses `LassoLarsIC(criterion="bic")`;
+- screening only needs no false negatives, not exact support recovery;
+- a smaller BIC penalty can be favorable for screening even when it would be
+  unsuitable for exact model selection.
+
+The high-dimensional (pge n-1) CV branch still requires a different
+argument, such as the RE-based result above or a dedicated high-dimensional
+screening theorem.
