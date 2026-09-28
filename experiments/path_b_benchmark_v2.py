@@ -18,8 +18,8 @@ from unittest.mock import patch
 import networkx as nx
 import numpy as np
 
-from causationentropy import discover_network
 import causationentropy.core.discovery as discovery_module
+from causationentropy import discover_network
 from causationentropy.core.discovery import standard_optimal_causation_entropy
 from causationentropy.core.information.conditional_mutual_information import (
     conditional_mutual_information,
@@ -525,7 +525,9 @@ def run_case(
     )
     screen_by_target = diagnostics.pop("screen_by_target")
     path_b_support_by_target = diagnostics.pop("support_by_target")
-    full_support_total = sum(len(support) for support in full_support_by_target.values())
+    full_support_total = sum(
+        len(support) for support in full_support_by_target.values()
+    )
     full_support_screened = sum(
         len(full_support_by_target[target] & screen_by_target.get(target, set()))
         for target in full_support_by_target
