@@ -381,3 +381,90 @@ The next theorem-facing experiment should therefore vary both:
 ]
 
 The current beta-min phase-transition benchmark controls the first axis.
+
+
+## 9. Rescue proposition aligned with the actual implementation
+
+The current rescue stage does not search over arbitrary revealing sets.  If the
+Information-LASSO endpoint is (W_0), it scores every excluded variable using
+
+[
+\widehat I_j(W_0)
+=
+\widehat I(X_j;Y\mid X_{W_0})
+]
+
+and retains the top (r=d-|W_0|) excluded variables required by the screen
+budget (d).
+
+A theorem for the implemented rescue therefore needs a **conditional ranking
+margin**, not merely existence of some unspecified revealing set.
+
+Let (H=S\setminus W_0) be the true parents missed by the endpoint.  Let
+(a_r(W_0)) denote the (r)-th largest population conditional information
+among excluded nonparents (with the convention (a_r=-\infty) if fewer than
+(r) nonparents exist).  If
+
+[
+\min_{j\in H} I(X_j;Y\mid X_{W_0})
+>
+a_{r-|H|+1}(W_0) + 2\epsilon_n,
+]
+
+and the conditional-information estimates satisfy the uniform error bound
+
+[
+\max_{j\notin W_0}
+\left|
+\widehat I_j(W_0)-I_j(W_0)
+\right|
+\le \epsilon_n,
+]
+
+then every hidden parent ranks inside the rescue budget, hence
+
+[
+S\subseteq W_0\cup W_{\rm rescue}.
+]
+
+The indexing above can equivalently be written as: at most
+(r-|H|) excluded nonparents may have population conditional information
+larger than the weakest hidden parent by less than the estimation margin.
+
+### Data-dependent endpoint issue
+
+Because (W_0) is estimated from the same sample, a rigorous proof cannot use a
+pointwise concentration statement that treats (W_0) as fixed.  Two clean
+routes are available:
+
+1. prove a uniform CMI concentration bound over all admissible conditioning
+   sets with size at most the endpoint budget; or
+2. introduce sample splitting / cross-fitting between proposal and rescue.
+
+The current implementation uses the first-data-twice design.  Therefore
+uniform concentration is the theorem-compatible route unless an explicit
+cross-fit variant is introduced.
+
+### Tuning-parameter issue
+
+The standard weighted-Lasso support-containment argument assumes a deterministic
+or high-probability tuning level satisfying approximately
+
+[
+\lambda \gtrsim
+\|Z^T\varepsilon/n\|_\infty
+\asymp
+\sigma\sqrt{\log p/n}.
+]
+
+The production implementation selects (lambda) with BIC (or CV when
+(p\ge n)).  BIC/CV are not automatically covered by the above theorem.
+The beta-min audit therefore records the ratio between the selected penalty and
+the empirical noise-dominance threshold.  If the production selector
+systematically violates the required event, the final theorem must either:
+
+- analyze the data-driven tuning rule directly; or
+- expose a theorem-backed tuning mode while retaining BIC/CV as the practical
+  default.
+
+This is a genuine remaining theory/implementation alignment question.
