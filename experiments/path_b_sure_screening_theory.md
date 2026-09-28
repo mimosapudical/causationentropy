@@ -318,3 +318,124 @@ Related screening and tuning work that motivates the next theorem step:
 The next paper-level step is not to import these results verbatim, but to prove
 a probability bound for the information-weight event and connect it to a
 weighted-design RE/beta-min condition in the stable Gaussian VAR setting.
+
+
+## 8. Making the weighted-design condition interpretable
+
+The weighted restricted-eigenvalue assumption can be related to an
+unweighted-design condition when the true-parent information weights are
+bounded away from zero.
+
+Let
+
+[
+a_{min,S}=min_{jin S}a_j>0,
+qquad
+0le a_jle1.
+]
+
+For (gamma=D_aDelta),
+
+[
+|gamma_{S^c}|_1
+le
+|Delta_{S^c}|_1
+le
+3|Delta_S|_1
+le
+rac{3}{a_{min,S}}|gamma_S|_1.
+]
+
+Thus if the original design (X) satisfies an RE condition with constant
+(kappa_X) on the enlarged cone
+
+[
+|gamma_{S^c}|_1
+le
+rac{3}{a_{min,S}}|gamma_S|_1,
+]
+
+then
+
+[
+rac{|widetilde XDelta|_2}{sqrt n}
+=
+rac{|Xgamma|_2}{sqrt n}
+ge
+kappa_X|gamma_S|_2
+ge
+a_{min,S}kappa_X|Delta_S|_2.
+]
+
+Therefore one may take
+
+[
+kappa_age a_{min,S}kappa_X.
+]
+
+A simple sufficient beta-min condition is consequently
+
+[
+eta_{min}
+>
+rac{3lambdasqrt{s}}
+{a_{min,S}^2kappa_X^2},
+]
+
+where this expression is conservative because it replaces the actual weighted
+RE constant by a lower bound and uses (a_jle1).
+
+This formula exposes the intended role of the information weights: a true
+parent whose marginal information weight collapses toward zero can make the
+screening requirement dramatically harder, even when its structural
+coefficient is not tiny.  That is precisely the regime targeted by conditional
+rescue / iterative screening rather than by the one-shot weighted Lasso.
+
+## 9. Dependence matters: the VAR probability step
+
+The deterministic no-false-negative result does not require iid rows.  The
+probability step does.
+
+For a stable Gaussian VAR, the lagged design is serially dependent.  The right
+theoretical bridge is therefore high-dimensional time-series Lasso theory,
+not an iid concentration argument.
+
+Basu and Michailidis (Annals of Statistics, 2015) derive nonasymptotic
+deviation and estimation bounds for sparse stable Gaussian time series and VAR
+transition-matrix estimation.  Their bounds use spectral properties of the
+stationary process to quantify how temporal dependence degrades effective
+concentration.  Wong, Li and Tewari extend this style of Lasso guarantee to
+mixing sub-Gaussian time series under more general data-generating processes.
+
+For Path B, the probability theorem should therefore have the schematic form
+
+[
+lambda_n
+asymp
+mathcal M(A,Sigma_arepsilon)
+sqrt{rac{log p}{n}},
+]
+
+where (mathcal M) is a stability/dependence factor inherited from the
+time-series deviation bound, together with a sample-RE event for the weighted
+lagged design.  The resulting sufficient signal condition becomes
+
+[
+eta_{min}
+gtrsim
+rac{
+mathcal M(A,Sigma_arepsilon)
+sqrt{slog p/n}
+}{
+a_{min,S}^2kappa_X^2
+}.
+]
+
+The exact constants and the correct Basu-Michailidis stability functional
+still need to be instantiated carefully from their theorem; the expression
+above is the target scaling, not yet a completed citation-level corollary.
+
+This is a remaining proof task for a paper submission, but it is now sharply
+localized: the algorithmic part of the no-false-negative argument is already
+deterministic, and only the stable-VAR concentration/RE probability bound has
+to be imported and adapted.
