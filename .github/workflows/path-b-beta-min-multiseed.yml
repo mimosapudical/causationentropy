@@ -1,0 +1,42 @@
+name: Path B beta-min multiseed audit
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - ".github/workflows/path-b-beta-min-multiseed.yml"
+  workflow_dispatch:
+
+jobs:
+  beta-min-multiseed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run multiseed beta-min audit
+        run: |
+          mkdir -p experiments/results/path_b_beta_min_multiseed
+          python -m experiments.path_b_beta_min_audit \
+            --nodes 50 \
+            --sample-sizes 150 300 600 \
+            --weight-floors 0.0 0.1 0.25 0.5 \
+            --seeds 3 \
+            --retention 0.40 \
+            > experiments/results/path_b_beta_min_multiseed/beta_min_multiseed.json
+
+      - name: Upload multiseed result
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-beta-min-multiseed-results
+          path: experiments/results/path_b_beta_min_multiseed
