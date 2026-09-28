@@ -218,13 +218,22 @@ def test_summary_schema_matches_v2_outputs(tmp_path):
     gaussian = {
         "gaussian": {
             "config": {"n_nodes": 20, "benchmark_role": "primary"},
-            "standard": {"runtime_seconds": 2.0, "f1": 0.9},
+            "standard": {
+                "runtime_seconds": 2.0,
+                "f1": 0.9,
+                "shuffle_cmi_evaluations": 1000,
+                "total_cmi_evaluations": 1200,
+            },
             "path_b_v2": {
                 "runtime_seconds": 1.0,
                 "candidate_retention": 0.4,
                 "screen_full_support_recall": 1.0,
                 "refined_full_support_recall": 1.0,
                 "f1": 0.9,
+                "shuffle_cmi_evaluations": 500,
+                "screen_marginal_cmi_scores": 100,
+                "screen_rescue_cmi_scores": 50,
+                "total_cmi_evaluations": 800,
             },
         }
     }
