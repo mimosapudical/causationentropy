@@ -98,6 +98,7 @@ def main():
         "causationentropy/core/information/conditional_mutual_information.py",
         "causationentropy/tests/test_path_b_v2_engineering.py",
         "causationentropy/tests/test_path_b_benchmark_smoke.py",
+        "causationentropy/tests/test_standard_ocse_correctness_v2.py",
         "experiments/path_b_benchmark_v1.py",
         "experiments/path_b_benchmark_v2.py",
         "experiments/path_b_common_random_numbers.py",
@@ -142,6 +143,7 @@ def main():
         "-q",
         "causationentropy/tests/test_path_b_v2_engineering.py",
         "causationentropy/tests/test_path_b_benchmark_smoke.py",
+        "causationentropy/tests/test_standard_ocse_correctness_v2.py",
     ]
     with (outdir / "01_focused_tests.txt").open("w", encoding="utf-8") as handle:
         subprocess.run(
