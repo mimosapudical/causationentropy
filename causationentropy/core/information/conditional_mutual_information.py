@@ -276,94 +276,88 @@ def geometric_knn_conditional_mutual_information(X, Y, Z, metric="euclidean", k=
     return cmi
 
 
+def _poisson_rate_matrix_from_correlation(correlation):
+    """Convert the paper's correlation surrogate into Poisson component rates.
+
+    Fish, Sun, and Bollt estimate the off-diagonal shared rates from pairwise
+    correlations so that the approximate rates remain in the small-rate regime.
+    Their Eq. (46) then recovers each private rate by subtracting the sum of the
+    shared rates from the corresponding diagonal entry.
+    """
+    correlation = np.atleast_2d(
+        np.asarray(correlation, dtype=float)
+    )
+    shared = correlation - np.diag(np.diag(correlation))
+    rates = shared.copy()
+    private = np.diag(correlation) - np.sum(shared, axis=1)
+    np.fill_diagonal(rates, private)
+    return rates
+
+
+def _poisson_rate_matrix(samples):
+    """Estimate the scaled Poisson component-rate matrix from observations."""
+    samples = np.asarray(samples)
+    correlation = np.corrcoef(samples, rowvar=False)
+    return _poisson_rate_matrix_from_correlation(correlation)
+
+
+def _poisson_joint_entropy_from_samples(samples):
+    """Estimate joint Poisson entropy using the paper's correlation scaling."""
+    return poisson_joint_entropy(_poisson_rate_matrix(samples))
+
+
 def poisson_conditional_mutual_information(X, Y, Z):
     """
-    Estimate conditional mutual information for multivariate Poisson distributions.
+    Estimate conditional mutual information for multivariate Poisson variables.
 
-    This function computes conditional mutual information for discrete count data
-    assuming Poisson distributions. The estimation uses the covariance structure
-    of the multivariate Poisson distribution:
+    The estimator follows Fish, Sun, and Bollt (2022). Their network experiments
+    intentionally use pairwise correlations as scaled surrogates for the shared
+    Poisson component rates, then recover the private rates with Eq. (46). For
+    conditional mutual information, Eq. (38) requires the proper Poisson
+    marginals in each entropy term:
 
-    .. math::
+        I(X;Y|Z) = H(X,Z) + H(Y,Z) - H(X,Y,Z) - H(Z).
 
-        I(X; Y | Z) = H(X, Z) + H(Y, Z) - H(Z) - H(X, Y, Z)
-
-    where entropies are computed using Poisson-specific formulations that account
-    for the discrete nature and parameter structure of Poisson variables.
+    Re-estimating the rate matrix for each retained variable set automatically
+    absorbs shared components involving marginalized variables into the retained
+    variables' private rates, as required by the Poisson marginal construction.
 
     Parameters
     ----------
     X : array-like of shape (n_samples, n_features_x)
-        Count data from first Poisson variables.
+        Count data from the first Poisson variables.
     Y : array-like of shape (n_samples, n_features_y)
-        Count data from second Poisson variables.
+        Count data from the second Poisson variables.
     Z : array-like of shape (n_samples, n_features_z) or None
-        Count data from conditioning Poisson variables.
-        If None, computes marginal mutual information.
+        Conditioning variables. If None, computes marginal mutual information.
 
     Returns
     -------
     I : float
         Estimated conditional mutual information for Poisson data.
 
-    Notes
-    -----
-    This implementation is specifically designed for discrete count data where:
-    - Variables follow Poisson distributions
-    - Dependencies are captured through covariance structure
-    - Joint distributions maintain Poisson-like properties
-
-    Applications include:
-    - Gene expression count data
-    - Event occurrence data
-    - Discrete interaction networks
-    - Epidemiological count models
-
     References
     ----------
-    .. [1] Fish, A., Sun, J., Bollt, E. Interaction networks from discrete event data by
-           Poisson multivariate mutual information estimation and information flow with
-           applications from gene expression data. (In preparation)
+    Fish, J., Sun, J. & Bollt, E. Interaction networks from discrete event
+    data by Poisson multivariate mutual information estimation and information
+    flow with applications from gene expression data. Applied Network Science
+    7, 70 (2022). https://doi.org/10.1007/s41109-022-00510-x
     """
+    X = np.atleast_2d(X)
+    Y = np.atleast_2d(Y)
 
     if Z is None:
-        SXY = np.corrcoef(X.T, Y.T)
-        l_est = SXY - np.diag(np.diag(SXY))
-        np.fill_diagonal(SXY, np.diagonal(SXY) - np.sum(l_est, axis=0))
-        Dcov = np.diag(SXY) + np.sum(l_est, axis=0)
-        TF = poisson_joint_entropy(SXY)
-        FT = np.sum(poisson_entropy(Dcov))
+        H_X = _poisson_joint_entropy_from_samples(X)
+        H_Y = _poisson_joint_entropy_from_samples(Y)
+        H_XY = _poisson_joint_entropy_from_samples(np.hstack((X, Y)))
+        return H_X + H_Y - H_XY
 
-        return FT - TF
-    else:
-        SzX = X.shape[1]
-        SzY = Y.shape[1]
-        SzZ = Z.shape[1]
-        indX = np.arange(SzX)
-        indY = np.arange(SzY) + SzX
-        indZ = np.arange(SzZ) + SzX + SzY
-        XYZ = np.concatenate((X, Y, Z), axis=1)
-        SXYZ = np.corrcoef(XYZ.T)
-        SS = SXYZ
-        Sa = SXYZ - np.diag(np.diag(SXYZ))
-        np.fill_diagonal(SS, np.diagonal(SS) - Sa)
-        SS[0:SzX, 0:SzX] = SS[0:SzX, 0:SzX] + SXYZ[0:SzX, SzX : SzX + SzY]
-        SS[SzX : SzX + SzY, SzX : SzX + SzY] = (
-            SS[SzX : SzX + SzY, SzX : SzX + SzY] + SXYZ[SzX : SzX + SzY, 0:SzX]
-        )
-        yz_idx = np.concatenate((indY, indZ))
-        xz_idx = np.concatenate((indX, indZ))
-        S_est1 = SS[np.ix_(yz_idx, yz_idx)]
-        S_est2 = SS[np.ix_(xz_idx, xz_idx)]
-        HYZ = poisson_joint_entropy(S_est1)
-        SindZ = SS[np.ix_(indZ, indZ)]
-        HZ = poisson_joint_entropy(SindZ)
-        HXYZ = poisson_joint_entropy(SXYZ - np.diag(Sa))
-        HXZ = poisson_joint_entropy(S_est2)
-        H_YZ = HYZ - HZ
-        H_XYZ = HXYZ - HXZ
-        cmi = H_YZ - H_XYZ  # I(X;Y|Z) = H(Y|Z) - H(Y|X,Z)
-        return cmi
+    Z = np.atleast_2d(Z)
+    H_XZ = _poisson_joint_entropy_from_samples(np.hstack((X, Z)))
+    H_YZ = _poisson_joint_entropy_from_samples(np.hstack((Y, Z)))
+    H_XYZ = _poisson_joint_entropy_from_samples(np.hstack((X, Y, Z)))
+    H_Z = _poisson_joint_entropy_from_samples(Z)
+    return H_XZ + H_YZ - H_XYZ - H_Z
 
 
 def conditional_mutual_information(
