@@ -36,7 +36,7 @@ def test_standard_forward_reuses_observed_scores_when_z_is_unchanged():
     ]
 
     with patch(
-        "causationentropy.core.discovery.conditional_mutual_information",
+        "causationentropy.core.discovery.gaussian_conditional_mutual_information",
         side_effect=fake_cmi,
     ) as cmi, patch(
         "causationentropy.core.discovery.shuffle_test",
