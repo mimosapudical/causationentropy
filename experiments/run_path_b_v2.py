@@ -117,7 +117,10 @@ def main():
         "pytest",
         "-q",
         "causationentropy/tests/test_discovery.py",
-        "causationentropy/tests/core/information/test_conditional_mutual_information.py",
+        (
+            "causationentropy/tests/core/information/"
+            "test_conditional_mutual_information.py"
+        ),
     ]
     with (outdir / "02_regression_tests.txt").open("w", encoding="utf-8") as handle:
         subprocess.run(
