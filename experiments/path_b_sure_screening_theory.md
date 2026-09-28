@@ -739,3 +739,92 @@ P(N_Isubseteq W_ho)
 The true-parent retention frontier is therefore not merely a hyperparameter
 sweep; it empirically estimates the computational/statistical operating point
 predicted by the screened-oCSE theory.
+
+
+## 14. Ranking-margin theorem for the one-shot conditional rescue
+
+The one-shot rescue can be given a population-to-sample guarantee without
+making the algorithm iterative.
+
+Let (A) be the Path-A endpoint and (M=Ssetminus A) the true parents missed
+by Path A.  Suppose the rescue has (q) available slots and define population
+conditional-information scores
+
+[
+c_j^*
+=
+I(X_j;Ymid X_A),
+qquad
+j
+otin A.
+]
+
+Let
+
+[
+c_M^*
+=
+min_{jin M} c_j^*.
+]
+
+Among excluded nonparents, order their population scores decreasingly and let
+(c_0^*) be the ((q-|M|+1))-st largest nonparent score.  If fewer than that
+many nonparents exist, set (c_0^*=-infty).
+
+Assume a positive rescue ranking margin
+
+[
+Delta_{mathrm{rescue}}
+=
+c_M^*-c_0^*
+>0.
+]
+
+Let (widehat c_j) be the sample conditional-information scores used by the
+algorithm.  On the uniform estimation event
+
+[
+max_{j
+otin A}
+|widehat c_j-c_j^*|
+<
+rac{Delta_{mathrm{rescue}}}{2},
+]
+
+every missed true parent ranks above all but at most (q-|M|) excluded
+nonparents.  Therefore the top-(q) one-shot rescue necessarily includes all
+of (M).
+
+### Proof
+
+For every missed parent,
+
+[
+widehat c_j
+>
+c_M^*-Delta_{mathrm{rescue}}/2.
+]
+
+Any nonparent below the population competition boundary has
+
+[
+widehat c_k
+<
+c_0^*+Delta_{mathrm{rescue}}/2
+=
+c_M^*-Delta_{mathrm{rescue}}/2.
+]
+
+Thus only the at-most (q-|M|) population-leading nonparents can outrank a
+missed parent in the sample ranking.  With (q) total rescue slots, all
+(|M|) missed parents must be retained.
+
+This proposition converts the empirical competition statistic (h(A)) into a
+standard finite-sample margin condition.  A probability guarantee follows from
+a uniform concentration bound for the Gaussian conditional-information
+estimator under the stable-VAR process.
+
+The theorem also explains the observed beta-min transition: stronger structural
+signals reduce both the number of parents missed by Path A and the number of
+nonparents competitive with the weakest missed parent, increasing the rescue
+margin and decreasing the required budget.
