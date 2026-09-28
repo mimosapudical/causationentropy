@@ -78,6 +78,9 @@ def main():
         shuffles = 20 if args.shuffles is None else args.shuffles
         crn_seeds = 1
         crn_shuffles = 10
+        path_audit_nodes = (20, 50)
+        path_audit_seeds = 1
+        path_audit_shuffles = 10
         scale_nodes = (20, 50)
         scale_seeds = 1
         scale_shuffles = min(shuffles, 20)
@@ -87,6 +90,9 @@ def main():
         shuffles = 100 if args.shuffles is None else args.shuffles
         crn_seeds = 3
         crn_shuffles = 20
+        path_audit_nodes = (20, 50, 100)
+        path_audit_seeds = 3
+        path_audit_shuffles = 20
         scale_nodes = (20, 50, 100, 200)
         scale_seeds = 3
         scale_shuffles = 20
@@ -102,6 +108,7 @@ def main():
         "experiments/path_b_benchmark_v1.py",
         "experiments/path_b_benchmark_v2.py",
         "experiments/path_b_common_random_numbers.py",
+        "experiments/path_b_path_preservation_audit.py",
         "experiments/path_b_screen_frontier_v2.py",
         "experiments/path_a_weight_normalization_audit.py",
         "experiments/poisson_rate_structure_audit.py",
@@ -207,6 +214,22 @@ def main():
             crn_shuffles,
         ),
         outdir / "04_common_random_numbers.json",
+    )
+
+    print("   running final-support vs forward-closure preservation audit")
+    run_command(
+        python_module(
+            "experiments.path_b_path_preservation_audit",
+            "--nodes",
+            *path_audit_nodes,
+            "--seeds",
+            path_audit_seeds,
+            "--retention",
+            args.retention,
+            "--n-shuffles",
+            path_audit_shuffles,
+        ),
+        outdir / "04b_path_preservation.json",
     )
 
     print("== [6/10] End-to-end Gaussian accuracy benchmark ==")
