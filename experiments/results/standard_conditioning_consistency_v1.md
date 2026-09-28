@@ -66,3 +66,34 @@ The runner executes:
 - full default pytest.
 
 Do not propose upstream until all four layers pass.
+
+
+## Minimal Gaussian counterexample
+
+A direct Gaussian construction demonstrates why dropping Z_init in backward
+elimination changes the statistical conclusion.
+
+Use
+
+    Z ~ N(0, 1)
+    X = Z + 0.2 eps_x
+    Y = Z + 0.2 eps_y
+
+with n=500.
+
+A formula-level reproduction gave approximately:
+
+- marginal I(X;Y) = 1.243;
+- marginal 95% permutation threshold = 0.00368;
+- I(X;Y|Z) = 0.00152;
+- conditional 95% permutation threshold = 0.00392.
+
+Therefore the same candidate passes when backward drops Z_init but fails when
+the fixed conditioning baseline is retained.
+
+The branch includes:
+
+    experiments/standard_backward_z_init_audit.py
+
+The validation runner executes that counterexample before the repository
+integration and full default test suites.
