@@ -106,6 +106,7 @@ def main():
         "experiments/poisson_rate_structure_audit.py",
         "experiments/gaussian_constant_feature_audit.py",
         "experiments/self_history_candidate_audit.py",
+        "experiments/only_return_significant_audit.py",
         "experiments/run_path_b_v2.py",
         "experiments/summarize_path_b_v2.py",
     ]
@@ -337,6 +338,10 @@ def main():
             self_history_shuffles,
         ),
         outdir / "08_self_history_candidate.json",
+    )
+    run_command(
+        python_module("experiments.only_return_significant_audit"),
+        outdir / "08_only_return_significant.json",
     )
 
     print("== [10/10] Markdown summary ==")
