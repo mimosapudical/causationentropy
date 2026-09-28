@@ -1,0 +1,44 @@
+name: Path B beta-min theory audit
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - "experiments/path_b_beta_min_audit.py"
+      - "experiments/path_b_sure_screening_theory.md"
+      - ".github/workflows/path-b-beta-min-audit.yml"
+  workflow_dispatch:
+
+jobs:
+  beta-min-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run beta-min audit
+        run: |
+          mkdir -p experiments/results/path_b_beta_min_ci
+          python -m experiments.path_b_beta_min_audit \
+            --nodes 20 50 \
+            --sample-sizes 150 300 \
+            --weight-floors 0.0 0.25 0.5 \
+            --seeds 1 \
+            --retention 0.40 \
+            > experiments/results/path_b_beta_min_ci/beta_min.json
+
+      - name: Upload beta-min result
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-beta-min-results
+          path: experiments/results/path_b_beta_min_ci
