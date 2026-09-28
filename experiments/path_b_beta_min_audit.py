@@ -178,6 +178,10 @@ def _target_row(
     support_gram_min_eig = None
     theta_min = None
     optimistic_margin_ratio = None
+    kkt_inverse_gram_inf = None
+    kkt_error_bound = None
+    kkt_certificate_ratio = None
+    kkt_parent_sure = None
     if truth and not zero_parent_weight:
         S = sorted(truth)
         gram = Xwc[:, S].T @ Xwc[:, S] / Xwc.shape[0]
@@ -193,6 +197,28 @@ def _target_row(
                 * support_gram_min_eig
                 / (3.0 * alpha * math.sqrt(len(S)))
             )
+
+        full_gram = Xwc.T @ Xwc / Xwc.shape[0]
+        if (
+            Xwc.shape[0] > Xwc.shape[1]
+            and np.linalg.matrix_rank(full_gram) == full_gram.shape[0]
+        ):
+            gram_inv = np.linalg.inv(full_gram)
+            kkt_inverse_gram_inf = float(
+                np.max(np.sum(np.abs(gram_inv), axis=1))
+            )
+            score_noise = noise_threshold / 2.0
+            if alpha is not None:
+                kkt_error_bound = float(
+                    kkt_inverse_gram_inf * (score_noise + alpha)
+                )
+                if kkt_error_bound > 0:
+                    kkt_certificate_ratio = float(
+                        theta_min / kkt_error_bound
+                    )
+                    kkt_parent_sure = bool(
+                        kkt_certificate_ratio > 1.0
+                    )
 
     return {
         "target": int(target),
@@ -235,6 +261,10 @@ def _target_row(
         "support_gram_min_eig": support_gram_min_eig,
         "theta_min": theta_min,
         "optimistic_margin_ratio": optimistic_margin_ratio,
+        "kkt_inverse_gram_inf": kkt_inverse_gram_inf,
+        "kkt_error_bound": kkt_error_bound,
+        "kkt_certificate_ratio": kkt_certificate_ratio,
+        "kkt_parent_sure": kkt_parent_sure,
     }
 
 
@@ -327,6 +357,29 @@ def _summarize(rows):
                 for row in parent_rows
             )
             else None
+        ),
+        "kkt_certificate_rate": (
+            float(np.mean([
+                row["kkt_parent_sure"]
+                for row in parent_rows
+                if row["kkt_parent_sure"] is not None
+            ]))
+            if any(
+                row["kkt_parent_sure"] is not None
+                for row in parent_rows
+            )
+            else None
+        ),
+        "median_kkt_certificate_ratio": _safe_median(
+            [row["kkt_certificate_ratio"] for row in parent_rows]
+        ),
+        "kkt_false_certificate_count": int(
+            sum(
+                row["kkt_parent_sure"]
+                and not row["endpoint_parent_complete"]
+                for row in parent_rows
+                if row["kkt_parent_sure"] is not None
+            )
         ),
     }
 
