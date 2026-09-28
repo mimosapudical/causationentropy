@@ -714,6 +714,29 @@ class TestPoissonConditionalMutualInformation:
         assert np.isfinite(cmi_xy)
         assert np.isclose(cmi_xy, cmi_yx, rtol=1e-12, atol=1e-12)
 
+    def test_poisson_cmi_preserves_shared_dependency_given_z(self):
+        """Shared X/Y Poisson dependence should survive correlated conditioning."""
+        rng = np.random.default_rng(123)
+        n = 2000
+        shared_xy = rng.poisson(0.3, size=n)
+        shared_xz = rng.poisson(0.2, size=n)
+        shared_yz = rng.poisson(0.1, size=n)
+        X = (
+            rng.poisson(0.8, size=n) + shared_xy + shared_xz
+        ).reshape(-1, 1)
+        Y = (
+            rng.poisson(0.9, size=n) + shared_xy + shared_yz
+        ).reshape(-1, 1)
+        Z = (
+            rng.poisson(1.0, size=n) + shared_xz + shared_yz
+        ).reshape(-1, 1)
+
+        cmi = poisson_conditional_mutual_information(X, Y, Z)
+
+        assert np.isfinite(cmi)
+        assert cmi > 0.05
+
+
     def test_poisson_cmi_multivariate_partition_is_symmetric(self):
         """Multivariate X/Y partitions use the same Poisson marginal rule."""
         rng = np.random.default_rng(321)
