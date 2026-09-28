@@ -439,3 +439,65 @@ This is a remaining proof task for a paper submission, but it is now sharply
 localized: the algorithmic part of the no-false-negative argument is already
 deterministic, and only the stable-VAR concentration/RE probability bound has
 to be imported and adapted.
+
+
+## 10. From Gaussian marginal visibility to a weight lower bound
+
+For the Gaussian information estimator used by the primary benchmark,
+
+[
+I_j
+=
+-rac12log(1-widehatho_j^2),
+]
+
+where (widehatho_j) is the sample correlation between candidate (j) and
+the target.  Let
+
+[
+g(r)=-rac12log(1-r^2),
+qquad 0le r<1.
+]
+
+Assume a population marginal-visibility condition for the true parents,
+
+[
+min_{jin S}|ho_j|ge ho_{min}>0,
+]
+
+and suppose a uniform correlation-concentration event holds,
+
+[
+max_j|widehatho_j-ho_j|ledelta,
+qquad
+0<delta<ho_{min}.
+]
+
+If (ho_{max}=max_j|ho_j|) and
+(ho_{max}+delta<1), then max-normalized information weights obey
+
+[
+a_{min,S}
+ge
+rac{
+g(ho_{min}-delta)
+}{
+g(ho_{max}+delta)
+}.
+]
+
+The proof is immediate from monotonicity of (g) on ([0,1)).
+
+This gives a concrete route for closing the probability theorem:
+
+1. use stable-Gaussian-VAR concentration to control all sample correlations;
+2. convert that event into an explicit parent-weight lower bound;
+3. combine the weight bound with a sample RE event for the lagged design;
+4. use a noise-dominating penalty and the deterministic no-false-negative
+   proposition.
+
+The visibility condition is genuinely structural.  It fails under exact
+suppression/cancellation, in which case no marginal-information weighting
+scheme can have a nonvanishing parent-weight lower bound.  That case should be
+handled by the conditional/iterative screening component rather than hidden
+inside the one-shot Path-A theorem.
