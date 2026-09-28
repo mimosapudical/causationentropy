@@ -35,13 +35,20 @@ def main():
     print("# Path B v2 local validation summary")
     print()
     print(f"- Gaussian seeds completed: {len(gaussian)}")
-    print(f"- Frontier targets per screen: {next(iter(frontier['gaussian_frontier']['summary'].values()))['targets'] if frontier['gaussian_frontier']['summary'] else 0}")
+    frontier_summary = frontier["gaussian_frontier"]["summary"]
+    frontier_targets = (
+        next(iter(frontier_summary.values()))["targets"] if frontier_summary else 0
+    )
+    print(f"- Frontier targets per screen: {frontier_targets}")
     print()
 
     summary = frontier["gaussian_frontier"]["summary"]
     print("## Screening frontier")
     print()
-    print("| Screen | Mean retention | Full forward-closure recall | Full final-support recall |")
+    print(
+        "| Screen | Mean retention | Full forward-closure recall | "
+        "Full final-support recall |"
+    )
     print("|---|---:|---:|---:|")
     for key in sorted(summary):
         row = summary[key]
@@ -57,7 +64,10 @@ def main():
     crn_path = outdir / "04_common_random_numbers.json"
     if crn_path.exists():
         crn = load_json(crn_path)["summary"]
-        print("| Target retention | Actual retention | Forward closure recall | Restricted final recall |")
+        print(
+            "| Target retention | Actual retention | Forward closure recall | "
+            "Restricted final recall |"
+        )
         print("|---:|---:|---:|---:|")
         for key in sorted(crn, key=float):
             row = crn[key]
@@ -150,7 +160,11 @@ def main():
             n_nodes = int(payload["config"]["n_nodes"])
             grouped.setdefault(n_nodes, []).append(payload)
 
-        print("| N | Runs | Candidate retention | Screen recall | Refined recall | Full runtime (s) | Path-B runtime (s) | Speedup | Shuffle-CMI reduction | Total-CMI reduction |")
+        print(
+            "| N | Runs | Candidate retention | Screen recall | Refined recall | "
+            "Full runtime (s) | Path-B runtime (s) | Speedup | "
+            "Shuffle-CMI reduction | Total-CMI reduction |"
+        )
         print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
         for n_nodes in sorted(grouped):
             rows = grouped[n_nodes]
