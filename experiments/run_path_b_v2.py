@@ -104,6 +104,7 @@ def main():
         "experiments/path_b_screen_frontier_v2.py",
         "experiments/path_a_weight_normalization_audit.py",
         "experiments/poisson_rate_structure_audit.py",
+        "experiments/gaussian_constant_feature_audit.py",
         "experiments/run_path_b_v2.py",
         "experiments/summarize_path_b_v2.py",
     ]
@@ -296,6 +297,16 @@ def main():
             5000,
         ),
         outdir / "08_poisson_rate_structure.json",
+    )
+    run_command(
+        python_module(
+            "experiments.gaussian_constant_feature_audit",
+            "--seed",
+            0,
+            "--n-samples",
+            500,
+        ),
+        outdir / "08_gaussian_constant_feature.json",
     )
 
     print("== [10/10] Markdown summary ==")
