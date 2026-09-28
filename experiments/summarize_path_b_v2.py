@@ -244,6 +244,11 @@ def main():
             f"{fmt(row['mean_sum_weighted_max_abs'], 6)} vs "
             f"{fmt(row['mean_max_weighted_max_abs'], 6)}"
         )
+        if "mean_scale_ratio_max_over_sum" in row:
+            print(
+                "- Mean design-scale ratio, max/sum normalization: "
+                f"{fmt(row['mean_scale_ratio_max_over_sum'], 3)}x"
+            )
     else:
         print("- Path A normalization audit: NOT_RUN")
 
