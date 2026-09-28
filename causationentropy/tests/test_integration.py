@@ -88,6 +88,7 @@ def test_standard_backward_maintains_true_parents(alpha, n_shuffles):
         alpha=alpha,
         n_shuffles=n_shuffles,
         information="gaussian",
+        Z_init=Z_init,
     )
 
     # Backward should maintain the true causal relationships
@@ -95,6 +96,51 @@ def test_standard_backward_maintains_true_parents(alpha, n_shuffles):
         1,
         2,
     }, f"Backward phase expected {{1, 2}}, got {set(backward_selected)}"
+
+
+def test_backward_preserves_initial_conditioning_set(monkeypatch):
+    """Every standard backward test should retain Z_init in its conditioning set."""
+    rng = np.random.default_rng(7)
+    X_full = rng.normal(size=(50, 3))
+    Y = rng.normal(size=(50, 1))
+    Z_init = rng.normal(size=(50, 2))
+    seen_conditioning = []
+
+    def fake_cmi(X, Y, Z, **kwargs):
+        seen_conditioning.append(Z.copy())
+        return 1.0
+
+    def fake_shuffle(*args, **kwargs):
+        return {
+            "Threshold": 0.0,
+            "Value": 1.0,
+            "Pass": True,
+            "P_value": 0.0,
+        }
+
+    monkeypatch.setattr(
+        "causationentropy.core.discovery.conditional_mutual_information",
+        fake_cmi,
+    )
+    monkeypatch.setattr(
+        "causationentropy.core.discovery.shuffle_test",
+        fake_shuffle,
+    )
+
+    selected = backward(
+        X_full,
+        Y,
+        [0, 1],
+        rng=np.random.default_rng(11),
+        n_shuffles=5,
+        Z_init=Z_init,
+    )
+
+    assert selected == [0, 1]
+    assert len(seen_conditioning) == 2
+    for Z in seen_conditioning:
+        assert Z.shape == (50, 3)
+        np.testing.assert_array_equal(Z[:, :2], Z_init)
 
 
 @pytest.mark.parametrize("alpha, n_shuffles", [(0.01, 1000)])
