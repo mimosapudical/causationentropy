@@ -362,13 +362,20 @@ def run_case(
     alpha=0.05,
     n_shuffles=100,
     n_jobs=1,
+    n_nodes=None,
+    T=None,
 ):
     factories = {
         "gaussian": gaussian_case,
         "logistic": logistic_case,
         "poisson": poisson_case,
     }
-    data, truth, information, case_metadata = factories[case](seed)
+    factory_kwargs = {}
+    if n_nodes is not None:
+        factory_kwargs["n_nodes"] = n_nodes
+    if T is not None:
+        factory_kwargs["T"] = T
+    data, truth, information, case_metadata = factories[case](seed, **factory_kwargs)
     n_nodes = data.shape[1]
 
     result = {
@@ -476,6 +483,8 @@ def main():
     parser.add_argument("--retention", type=float, default=0.40)
     parser.add_argument("--n-shuffles", type=int, default=100)
     parser.add_argument("--n-jobs", type=int, default=1)
+    parser.add_argument("--n-nodes", type=int, default=None)
+    parser.add_argument("--T", type=int, default=None)
     args = parser.parse_args()
 
     cases = ("gaussian", "logistic", "poisson") if args.case == "all" else (args.case,)
@@ -486,6 +495,8 @@ def main():
             retention=args.retention,
             n_shuffles=args.n_shuffles,
             n_jobs=args.n_jobs,
+            n_nodes=args.n_nodes,
+            T=args.T,
         )
         for case in cases
     }
