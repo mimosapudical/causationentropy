@@ -26,6 +26,12 @@ jobs:
         run: |
           python -m experiments.run_path_b_v2 --mode quick --outdir experiments/results/path_b_v2_ci
 
+      - name: True-edge detectability audit
+        run: |
+          python -m experiments.path_b_true_edge_detectability_audit \
+            experiments/results/path_b_v2_ci/04b_path_preservation.json \
+            > experiments/results/path_b_v2_ci/04f_true_edge_detectability.json
+
       - name: Certified Path B working-set audit
         run: |
           python -m experiments.path_b_certified_working_set_audit \
