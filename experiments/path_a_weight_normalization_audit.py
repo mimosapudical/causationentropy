@@ -88,6 +88,7 @@ def run_audit(
     edge_probability=0.08,
     rho=0.7,
     seeds=10,
+    targets_per_seed=None,
 ):
     rows = []
     for seed in range(seeds):
@@ -107,7 +108,19 @@ def run_audit(
         )
         X, Y_all, _, _ = lagged_design(data, max_lag=1)
 
-        for target in range(n_nodes):
+        if targets_per_seed is None or targets_per_seed >= n_nodes:
+            targets = range(n_nodes)
+        else:
+            targets = np.unique(
+                np.linspace(
+                    0,
+                    n_nodes - 1,
+                    targets_per_seed,
+                    dtype=int,
+                )
+            )
+
+        for target in targets:
             Y = Y_all[:, [target]]
             values = information_values(X, Y)
             sum_support, sum_diag = fit_support(
@@ -143,6 +156,7 @@ def run_audit(
             "edge_probability": edge_probability,
             "rho": rho,
             "seeds": seeds,
+            "targets_per_seed": targets_per_seed,
         },
         "summary": {
             "targets": len(rows),
@@ -161,6 +175,16 @@ def run_audit(
             "mean_max_weighted_max_abs": float(
                 np.mean([row["max_weighted_max_abs"] for row in rows])
             ),
+            "mean_scale_ratio_max_over_sum": float(
+                np.mean(
+                    [
+                        row["max_weighted_max_abs"]
+                        / row["sum_weighted_max_abs"]
+                        for row in rows
+                        if row["sum_weighted_max_abs"] > 0
+                    ]
+                )
+            ),
         },
         "rows": rows,
         "implementation_changed": False,
@@ -172,6 +196,15 @@ def main():
     parser.add_argument("--n-nodes", type=int, default=50)
     parser.add_argument("--T", type=int, default=300)
     parser.add_argument("--seeds", type=int, default=10)
+    parser.add_argument(
+        "--targets-per-seed",
+        type=int,
+        default=None,
+        help=(
+            "Audit an evenly spaced target subset per seed. "
+            "Default: all targets."
+        ),
+    )
     args = parser.parse_args()
     print(
         json.dumps(
@@ -179,6 +212,7 @@ def main():
                 n_nodes=args.n_nodes,
                 T=args.T,
                 seeds=args.seeds,
+                targets_per_seed=args.targets_per_seed,
             ),
             indent=2,
             sort_keys=True,
