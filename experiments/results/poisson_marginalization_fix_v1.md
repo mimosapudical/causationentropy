@@ -137,3 +137,12 @@ The actual branch must still pass:
     python -m experiments.run_poisson_marginalization_fix_v1
 
 before an upstream PR is opened.
+
+
+## Finite-sample non-negativity
+
+The direct Poisson MI/CMI estimator now applies the same finite-value
+non-negativity clamp as the public conditional_mutual_information dispatcher.
+This keeps direct and dispatcher calls consistent when sampling noise produces
+a small negative estimate (for example about -0.0041 in the repository unit
+test) while preserving NaN/inf for error handling.
