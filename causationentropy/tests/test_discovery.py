@@ -110,7 +110,7 @@ class TestStandardConditioningConsistency:
         assert graph.number_of_edges() == 1
         assert mock_cmi.call_count >= 1
         final_Z = mock_cmi.call_args_list[-1].args[2]
-        expected_history = data[:-1, [1]]
+        expected_history = data[:-1, [0]]
         np.testing.assert_allclose(final_Z, expected_history)
 
 
