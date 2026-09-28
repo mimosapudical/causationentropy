@@ -35,6 +35,7 @@ def main():
     targets = [
         "causationentropy/core/discovery.py",
         "causationentropy/tests/test_discovery.py",
+        "experiments/standard_backward_z_init_audit.py",
         "experiments/run_standard_conditioning_consistency_v1.py",
     ]
 
@@ -77,6 +78,20 @@ def main():
         [
             sys.executable,
             "-m",
+            "experiments.standard_backward_z_init_audit",
+            "--seed",
+            "123",
+            "--n",
+            "500",
+            "--n-shuffles",
+            "500",
+        ],
+        outdir / "05_backward_z_init_audit.json",
+    )
+    run(
+        [
+            sys.executable,
+            "-m",
             "pytest",
             "-q",
             "causationentropy/tests/test_data_integration.py",
@@ -85,11 +100,11 @@ def main():
             "-k",
             "standard_gaussian",
         ],
-        outdir / "05_standard_gaussian_integration.txt",
+        outdir / "06_standard_gaussian_integration.txt",
     )
     run(
         [sys.executable, "-m", "pytest", "-q"],
-        outdir / "06_full_default_pytest.txt",
+        outdir / "07_full_default_pytest.txt",
     )
 
     print(f"STANDARD_CONDITIONING_VALIDATION_COMPLETE={outdir}")
