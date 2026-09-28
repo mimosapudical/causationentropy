@@ -182,6 +182,10 @@ def _target_row(
     kkt_error_bound = None
     kkt_certificate_ratio = None
     kkt_parent_sure = None
+    ols_shrinkage_bound = None
+    ols_parent_min = None
+    ols_certificate_ratio = None
+    ols_parent_sure = None
     if truth and not zero_parent_weight:
         S = sorted(truth)
         gram = Xwc[:, S].T @ Xwc[:, S] / Xwc.shape[0]
@@ -218,6 +222,22 @@ def _target_row(
                     )
                     kkt_parent_sure = bool(
                         kkt_certificate_ratio > 1.0
+                    )
+
+                yc = Y.reshape(-1) - float(np.mean(Y))
+                theta_ols = gram_inv @ (Xwc.T @ yc / Xwc.shape[0])
+                ols_parent_min = float(
+                    np.min(np.abs(theta_ols[S]))
+                )
+                ols_shrinkage_bound = float(
+                    alpha * kkt_inverse_gram_inf
+                )
+                if ols_shrinkage_bound > 0:
+                    ols_certificate_ratio = float(
+                        ols_parent_min / ols_shrinkage_bound
+                    )
+                    ols_parent_sure = bool(
+                        ols_certificate_ratio > 1.0
                     )
 
     return {
@@ -265,6 +285,10 @@ def _target_row(
         "kkt_error_bound": kkt_error_bound,
         "kkt_certificate_ratio": kkt_certificate_ratio,
         "kkt_parent_sure": kkt_parent_sure,
+        "ols_shrinkage_bound": ols_shrinkage_bound,
+        "ols_parent_min": ols_parent_min,
+        "ols_certificate_ratio": ols_certificate_ratio,
+        "ols_parent_sure": ols_parent_sure,
     }
 
 
@@ -379,6 +403,29 @@ def _summarize(rows):
                 and not row["endpoint_parent_complete"]
                 for row in parent_rows
                 if row["kkt_parent_sure"] is not None
+            )
+        ),
+        "ols_certificate_rate": (
+            float(np.mean([
+                row["ols_parent_sure"]
+                for row in parent_rows
+                if row["ols_parent_sure"] is not None
+            ]))
+            if any(
+                row["ols_parent_sure"] is not None
+                for row in parent_rows
+            )
+            else None
+        ),
+        "median_ols_certificate_ratio": _safe_median(
+            [row["ols_certificate_ratio"] for row in parent_rows]
+        ),
+        "ols_false_certificate_count": int(
+            sum(
+                row["ols_parent_sure"]
+                and not row["endpoint_parent_complete"]
+                for row in parent_rows
+                if row["ols_parent_sure"] is not None
             )
         ),
     }
