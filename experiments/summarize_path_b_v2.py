@@ -99,6 +99,33 @@ def main():
         print(f"- Mean full-oCSE F1: {fmt(mean(full_f1))}")
         print(f"- Mean Path-B-v2 F1: {fmt(mean(path_f1))}")
         print(f"- Mean runtime speedup: {fmt(mean(speedups), 2)}x")
+
+        full_shuffle_evals = [
+            row["standard"].get("shuffle_cmi_evaluations", float("nan"))
+            for row in gaussian
+        ]
+        path_shuffle_evals = [
+            row["path_b_v2"].get("shuffle_cmi_evaluations", float("nan"))
+            for row in gaussian
+        ]
+        shuffle_reductions = [
+            1.0 - path / full
+            for full, path in zip(full_shuffle_evals, path_shuffle_evals)
+            if full == full and path == path and full > 0
+        ]
+        screen_scores = [
+            row["path_b_v2"].get("screen_marginal_cmi_scores", 0)
+            + row["path_b_v2"].get("screen_rescue_cmi_scores", 0)
+            for row in gaussian
+        ]
+        print(
+            f"- Mean shuffle-CMI evaluation reduction: "
+            f"{fmt(mean(shuffle_reductions))}"
+        )
+        print(
+            f"- Mean no-shuffle screen CMI scores: "
+            f"{fmt(mean(screen_scores), 1)}"
+        )
     else:
         print("No Gaussian result files found.")
 
@@ -113,8 +140,8 @@ def main():
             n_nodes = int(payload["config"]["n_nodes"])
             grouped.setdefault(n_nodes, []).append(payload)
 
-        print("| N | Runs | Candidate retention | Screen recall | Refined recall | Full runtime (s) | Path-B runtime (s) | Speedup |")
-        print("|---:|---:|---:|---:|---:|---:|---:|---:|")
+        print("| N | Runs | Candidate retention | Screen recall | Refined recall | Full runtime (s) | Path-B runtime (s) | Speedup | Shuffle-CMI reduction |")
+        print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
         for n_nodes in sorted(grouped):
             rows = grouped[n_nodes]
             full_runtime = [row["standard"]["runtime_seconds"] for row in rows]
@@ -133,11 +160,24 @@ def main():
             refined_recall = [
                 row["path_b_v2"]["refined_full_support_recall"] for row in rows
             ]
+            full_shuffle = [
+                row["standard"].get("shuffle_cmi_evaluations", float("nan"))
+                for row in rows
+            ]
+            path_shuffle = [
+                row["path_b_v2"].get("shuffle_cmi_evaluations", float("nan"))
+                for row in rows
+            ]
+            shuffle_reduction = [
+                1.0 - path / full
+                for full, path in zip(full_shuffle, path_shuffle)
+                if full == full and path == path and full > 0
+            ]
             print(
                 f"| {n_nodes} | {len(rows)} | {fmt(mean(retention))} | "
                 f"{fmt(mean(screen_recall))} | {fmt(mean(refined_recall))} | "
                 f"{fmt(mean(full_runtime), 2)} | {fmt(mean(path_runtime), 2)} | "
-                f"{fmt(mean(speedups), 2)}x |"
+                f"{fmt(mean(speedups), 2)}x | {fmt(mean(shuffle_reduction))} |"
             )
     else:
         print("Scaling benchmark: NOT_RUN")
