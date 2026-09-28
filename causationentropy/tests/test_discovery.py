@@ -607,6 +607,138 @@ class TestDiscoverNetworkRandomState:
         assert set(G.nodes()) == {"X0", "X1"}
 
 
+class TestSparseMethodPosthocSignificance:
+    """Sparse supports require a shuffle-test significance gate."""
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch("causationentropy.core.discovery.conditional_mutual_information")
+    def test_sparse_support_failing_shuffle_is_omitted(
+        self, mock_cmi, mock_shuffle
+    ):
+        mock_cmi.return_value = 0.1
+        mock_shuffle.return_value = {
+            "Threshold": 0.2,
+            "Value": 0.1,
+            "Pass": False,
+            "P_value": 0.9,
+        }
+        data = np.random.default_rng(0).normal(size=(40, 2))
+
+        selectors = {
+            "lasso": (
+                "causationentropy.core.discovery."
+                "lasso_optimal_causation_entropy"
+            ),
+            "information_lasso": (
+                "causationentropy.core.discovery."
+                "information_lasso_optimal_causation_entropy"
+            ),
+        }
+        for method, selector in selectors.items():
+            with patch(selector, return_value=[0]):
+                graph = discover_network(
+                    data,
+                    method=method,
+                    max_lag=1,
+                    n_shuffles=5,
+                )
+            assert graph.number_of_edges() == 0
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch("causationentropy.core.discovery.conditional_mutual_information")
+    def test_sparse_support_passing_shuffle_is_retained(
+        self, mock_cmi, mock_shuffle
+    ):
+        mock_cmi.return_value = 0.5
+        mock_shuffle.return_value = {
+            "Threshold": 0.2,
+            "Value": 0.5,
+            "Pass": True,
+            "P_value": 0.01,
+        }
+        data = np.random.default_rng(1).normal(size=(40, 2))
+
+        with patch(
+            "causationentropy.core.discovery."
+            "information_lasso_optimal_causation_entropy",
+            return_value=[0],
+        ):
+            graph = discover_network(
+                data,
+                method="information_lasso",
+                max_lag=1,
+                n_shuffles=5,
+            )
+
+        assert graph.number_of_edges() == 2
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch("causationentropy.core.discovery.conditional_mutual_information")
+    @patch(
+        "causationentropy.core.discovery.standard_optimal_causation_entropy"
+    )
+    def test_standard_selection_is_not_re_gated_by_reporting_shuffle(
+        self,
+        mock_standard,
+        mock_cmi,
+        mock_shuffle,
+    ):
+        """Standard S already passed forward/backward significance testing."""
+        mock_standard.return_value = [0]
+        mock_cmi.return_value = 0.1
+        mock_shuffle.return_value = {
+            "Threshold": 0.2,
+            "Value": 0.1,
+            "Pass": False,
+            "P_value": 0.9,
+        }
+        data = np.random.default_rng(2).normal(size=(40, 2))
+
+        graph = discover_network(
+            data,
+            method="standard",
+            max_lag=1,
+            n_shuffles=5,
+        )
+
+        assert graph.number_of_edges() == 2
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch("causationentropy.core.discovery.conditional_mutual_information")
+    @patch(
+        "causationentropy.core.discovery."
+        "information_lasso_optimal_causation_entropy"
+    )
+    def test_report_all_marks_failed_sparse_support_insignificant(
+        self,
+        mock_information_lasso,
+        mock_cmi,
+        mock_shuffle,
+    ):
+        mock_information_lasso.return_value = [0]
+        mock_cmi.return_value = 0.1
+        mock_shuffle.return_value = {
+            "Threshold": 0.2,
+            "Value": 0.1,
+            "Pass": False,
+            "P_value": 0.9,
+        }
+        data = np.random.default_rng(3).normal(size=(30, 2))
+
+        graph = discover_network(
+            data,
+            method="information_lasso",
+            max_lag=1,
+            n_shuffles=5,
+            only_return_significant=False,
+        )
+
+        assert graph.number_of_edges() == 4
+        assert not any(
+            attrs["significant"] for _, _, attrs in graph.edges(data=True)
+        )
+
+
 class TestLassoOptimalCausationEntropy:
     """Test LASSO-based variable selection for causal discovery."""
 
