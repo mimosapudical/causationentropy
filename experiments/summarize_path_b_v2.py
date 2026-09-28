@@ -265,6 +265,20 @@ def main():
     else:
         print("- Poisson rate-structure audit: NOT_RUN")
 
+    gaussian_audit = outdir / "08_gaussian_constant_feature.json"
+    if gaussian_audit.exists():
+        payload = load_json(gaussian_audit)["cases"]
+        constant = payload["constant_vs_random"]
+        near_constant = payload["near_constant_vs_random"]
+        independent = payload["independent_random"]
+        print(
+            "- Gaussian MI constant / near-constant / independent: "
+            f"{fmt(constant['mi'], 6)} / {fmt(near_constant['mi'], 6)} / "
+            f"{fmt(independent['mi'], 6)}"
+        )
+    else:
+        print("- Gaussian constant-feature audit: NOT_RUN")
+
     print()
     print("## Nonlinear / estimator audit")
     print()
