@@ -40,10 +40,13 @@ def discovery_work_counter():
     """Count dominant exact-oCSE work without changing statistical decisions."""
     counts = {
         "forward_observed_cmi_scores": 0,
+        "backward_observed_cmi_scores": 0,
+        "output_observed_cmi_scores": 0,
         "shuffle_tests": 0,
         "shuffle_cmi_evaluations": 0,
     }
     original_scores = discovery_module._candidate_cmi_values
+    original_backward = discovery_module.backward
     original_shuffle = discovery_module.shuffle_test
 
     def counted_scores(
@@ -70,13 +73,25 @@ def discovery_work_counter():
             reuse_gaussian_context=reuse_gaussian_context,
         )
 
+    def counted_backward(*args, **kwargs):
+        if len(args) >= 3:
+            selected = args[2]
+        else:
+            selected = kwargs.get("S_init", [])
+        counts["backward_observed_cmi_scores"] += len(selected)
+        return original_backward(*args, **kwargs)
+
     def counted_shuffle(*args, **kwargs):
         n_shuffles = int(kwargs.get("n_shuffles", 500))
         counts["shuffle_tests"] += 1
         counts["shuffle_cmi_evaluations"] += n_shuffles
         return original_shuffle(*args, **kwargs)
 
-    with patch.object(discovery_module, "_candidate_cmi_values", counted_scores), patch.object(
+    with patch.object(
+        discovery_module, "_candidate_cmi_values", counted_scores
+    ), patch.object(
+        discovery_module, "backward", counted_backward
+    ), patch.object(
         discovery_module, "shuffle_test", counted_shuffle
     ):
         yield counts
@@ -179,6 +194,7 @@ def run_full_standard_matched(
                 others = [idx for idx in support if idx != global_idx]
                 Z_cond = X[:, others] if others else None
                 X_predictor = X[:, [global_idx]]
+                work["output_observed_cmi_scores"] += 1
                 cmi = conditional_mutual_information(
                     X_predictor,
                     Y,
@@ -292,6 +308,7 @@ def run_path_b_v2(
                 other_global = [screened[int(idx)] for idx in other_local]
                 Z_cond = X[:, other_global] if other_global else None
                 X_predictor = X[:, [global_idx]]
+                work["output_observed_cmi_scores"] += 1
                 cmi = conditional_mutual_information(
                     X_predictor,
                     Y,
@@ -472,6 +489,12 @@ def run_case(
         **metrics(truth, edge_set(full_graph), n_nodes, max_lag),
         "runtime_seconds": full_runtime,
         **full_work,
+        "total_cmi_evaluations": (
+            full_work["forward_observed_cmi_scores"]
+            + full_work["backward_observed_cmi_scores"]
+            + full_work["output_observed_cmi_scores"]
+            + full_work["shuffle_cmi_evaluations"]
+        ),
     }
 
     for method in ("lasso", "information_lasso"):
@@ -518,6 +541,14 @@ def run_case(
     result["path_b_v2"] = {
         **metrics(truth, edge_set(graph_b), n_nodes, max_lag),
         **diagnostics,
+        "total_cmi_evaluations": (
+            diagnostics["screen_marginal_cmi_scores"]
+            + diagnostics["screen_rescue_cmi_scores"]
+            + diagnostics["forward_observed_cmi_scores"]
+            + diagnostics["backward_observed_cmi_scores"]
+            + diagnostics["output_observed_cmi_scores"]
+            + diagnostics["shuffle_cmi_evaluations"]
+        ),
         "screen_full_support_recall": (
             full_support_screened / full_support_total
             if full_support_total
