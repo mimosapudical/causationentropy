@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - experiment/path-b-benchmark-v2
-  pull_request:
-    branches:
-      - feature/information-lasso-path-a
   workflow_dispatch:
 
 jobs:
