@@ -164,3 +164,32 @@ top-k/threshold witness heuristic.  The next experiment should compare
 low-dimensional Gaussian partial-correlation/F checks (including partitioned
 excluded sets) against the giant-block certificate in terms of omitted-parent
 power, false expansions, and total test/evaluation cost.
+
+
+## 7. Baseline identity is not the same as causal accuracy
+
+The current Gaussian path-preservation audit reveals that several apparent
+"screening misses" are not causally meaningful misses.
+
+For the one-seed quick regimes used in the audit:
+
+- N=20: the 40% screen omits three true graph edges; full keyed oCSE also omits
+  all three.
+- N=50: the screen omits 21 true graph edges across 16 targets; full keyed oCSE
+  also omits all 21.
+- N=50: six edges in the full keyed final support are absent from the screen;
+  all six are false positives relative to the generating graph.
+
+The synthetic generator assigns every graph edge an independent random weight
+in (-1, 1) and then globally rescales the matrix to the requested spectral
+radius.  It therefore has no beta-min condition: arbitrarily weak "true" edges
+are present by construction.
+
+Consequently, exact reproduction of the finite-sample full-oCSE graph is not an
+appropriate scientific target by itself.  A screened method can differ from the
+baseline by removing baseline false positives while preserving every
+finite-sample-detectable true parent.
+
+The theory target should therefore be stated in terms of parent-sure screening
+and causal-support consistency.  Finite-sample full-graph identity remains a
+diagnostic for path instability, not the primary correctness criterion.
