@@ -1017,3 +1017,118 @@ finished paper theorem:
 Reference:
 Sumanta Basu and George Michailidis, "Regularized estimation in sparse
 high-dimensional time series models", Annals of Statistics 43(4), 2015.
+
+
+## 16. Closing the Gaussian information-visibility probability event
+
+The remaining parent-weight event can also be obtained from the stable-Gaussian
+time-series concentration results of Basu and Michailidis.
+
+For one target, define the augmented stationary Gaussian process
+
+[
+W_t
+=
+(X_{t-1,1},ldots,X_{t-1,p},Y_t)^	op.
+]
+
+A time shift of coordinates preserves stationarity, and for a stable Gaussian
+VAR this augmented process has a bounded spectral density.
+
+Proposition 2.4(a) of Basu--Michailidis gives element-wise concentration of the
+sample covariance matrix around its population counterpart.  Applying their
+bound to the augmented process and taking a union bound over the
+parent--target covariance entries and the marginal variances gives, for a
+stability-dependent constant (C_W),
+
+[
+max_j
+|widehatSigma_{jY}-Sigma_{jY}|
+ee
+max_j
+|widehatSigma_{jj}-Sigma_{jj}|
+ee
+|widehatSigma_{YY}-Sigma_{YY}|
+lesssim
+C_Wsqrt{rac{log p}{N}}
+]
+
+with high probability.
+
+Assume the relevant population variances are bounded away from zero,
+
+[
+min_j Sigma_{jj}wedgeSigma_{YY}ge v_{min}>0.
+]
+
+Because correlation is a smooth function of covariance entries on this
+variance-bounded domain, there exists a constant (C_ho), depending on the
+variance bounds and spectral stability, such that
+
+[
+max_j
+|widehatho_j-ho_j|
+le
+C_hosqrt{rac{log p}{N}}
+]
+
+with the same high-probability form.
+
+If the population parent-visibility condition is
+
+[
+min_{jin S}|ho_j|
+ge
+ho_{min}>0
+]
+
+and
+
+[
+C_hosqrt{rac{log p}{N}}
+<
+ho_{min},
+]
+
+then every true parent has a nonvanishing sample marginal correlation.  The
+Gaussian information transformation
+
+[
+g(r)=-rac12log(1-r^2)
+]
+
+is monotone in (|r|), so the max-normalized information weights satisfy the
+explicit high-probability lower bound
+
+[
+a_{min,S}
+ge
+rac{
+g!left(
+ho_{min}
+-
+C_hosqrt{log p/N}
+ight)
+}{
+g!left(
+ho_{max}
++
+C_hosqrt{log p/N}
+ight)
+}
+]
+
+whenever the denominator argument remains below one.
+
+Together with Section 15, this closes the probability structure of the
+parent-sure theorem for **marginally visible parents in a stable Gaussian VAR**:
+
+- covariance concentration -> parent information-weight lower bound;
+- stable-VAR RE + score deviation -> weighted-Lasso error bound;
+- beta-min -> no false negatives;
+- restricted-oCSE corollary -> population causal-parent recovery.
+
+The remaining theory/implementation mismatch is the penalty-selection policy:
+the clean finite-sample/asymptotic corollary uses a theoretically calibrated
+(lambda_N), while the current production implementation selects the penalty
+with BIC or cross-validation.
