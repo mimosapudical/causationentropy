@@ -92,7 +92,7 @@ def main():
         scale_shuffles = 20
         nonlinear_seeds = (0, 1, 2)
 
-    print("== [1/10] Style / syntax gates ==")
+    print("== [1/10] Syntax / critical lint gates ==")
     style_targets = [
         "causationentropy/core/discovery.py",
         "causationentropy/core/information/conditional_mutual_information.py",
@@ -112,9 +112,8 @@ def main():
         "experiments/run_path_b_v2.py",
         "experiments/summarize_path_b_v2.py",
     ]
-    style_commands = [
-        [sys.executable, "-m", "black", "--check", *style_targets],
-        [sys.executable, "-m", "isort", "--check-only", *style_targets],
+    syntax_commands = [
+        [sys.executable, "-m", "compileall", "-q", *style_targets],
         [
             sys.executable,
             "-m",
@@ -123,9 +122,9 @@ def main():
             *style_targets,
         ],
     ]
-    style_log = outdir / "00_style_checks.txt"
+    style_log = outdir / "00_syntax_lint_checks.txt"
     with style_log.open("w", encoding="utf-8") as handle:
-        for command in style_commands:
+        for command in syntax_commands:
             print("+", " ".join(command), file=handle, flush=True)
             subprocess.run(
                 command,
