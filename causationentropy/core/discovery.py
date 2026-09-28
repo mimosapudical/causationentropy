@@ -402,11 +402,6 @@ def standard_optimal_causation_entropy(
         Number of permutations for statistical testing.
     information : str, default='gaussian'
         Information measure estimator type.
-    Z_init : array-like of shape (T, p) or None, default=None
-        Initial conditioning set that remains present during backward
-        elimination. Standard oCSE passes the lagged target history here;
-        alternative oCSE leaves it as None.
-
     Returns
     -------
     S : list of int
@@ -851,6 +846,10 @@ def backward(
         Number of permutation shuffles for statistical testing.
     information : str, default='gaussian'
         Information measure estimator type.
+    Z_init : array-like of shape (T, p) or None, default=None
+        Initial conditioning set that remains present during backward
+        elimination. Standard oCSE passes the lagged target history here;
+        alternative oCSE leaves it as None.
 
     Returns
     -------
