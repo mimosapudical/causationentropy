@@ -82,6 +82,18 @@ jobs:
             --n-shuffles 10 \
             > experiments/results/path_b_v2_ci/04g_beta_min_phase_transition.json
 
+      - name: Controlled suppression-rescue audit
+        run: |
+          python -m experiments.path_b_suppression_phase_transition \
+            --n-nodes 20 \
+            --T 300 \
+            --beta 0.20 \
+            --rho 0.80 \
+            --deltas 0.0 0.05 0.10 0.25 0.50 1.0 \
+            --retention 0.40 \
+            --seeds 20 \
+            > experiments/results/path_b_v2_ci/04h_suppression_phase_transition.json
+
       - name: Upload experiment outputs
         if: always()
         uses: actions/upload-artifact@v4
