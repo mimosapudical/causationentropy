@@ -178,7 +178,6 @@ def exact_standard_sets(
         alpha=alpha,
         n_shuffles=n_shuffles,
         information=information,
-        reuse_gaussian_context=(information == "gaussian"),
     )
     final = backward(
         X,
@@ -188,7 +187,6 @@ def exact_standard_sets(
         alpha=alpha,
         n_shuffles=n_shuffles,
         information=information,
-        reuse_gaussian_context=(information == "gaussian"),
     )
     return set(int(j) for j in forward), set(int(j) for j in final)
 
