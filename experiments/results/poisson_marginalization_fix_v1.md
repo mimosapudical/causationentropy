@@ -74,3 +74,66 @@ Run:
     python -m experiments.run_poisson_marginalization_fix_v1
 
 Do not propose this upstream until those existing integration tests pass.
+
+
+## Source-equivalent 1000-shuffle integration proxy
+
+Because this environment cannot execute a GitHub checkout, the repository's
+Poisson generator, forward/backward oCSE logic, sequential RNG behavior, and
+corrected Poisson CMI were reconstructed directly from the branch source.
+
+The only acceleration used in the permutation loop was algebraically
+equivalent batching:
+
+- Pearson correlations for 100 shuffled candidates were compared against
+  individual np.corrcoef calls;
+- maximum absolute difference in CMI was 1.24e-14;
+- Poisson PMFs were evaluated by the exact recurrence
+  p_k = p_(k-1) * lambda / k rather than repeated scipy.stats object calls;
+- the recurrence matched the repository poisson_entropy implementation to
+  4.44e-16 on representative rates.
+
+The repository's own integration configuration was then reproduced:
+
+    n = 5
+    T = 200
+    p = 0.2
+    seed = 42
+    max_lag = 1
+    random_state = 42
+    n_shuffles = 1000
+
+Results:
+
+| Method | TP | FP | TPR | FPR | Repository gate |
+|---|---:|---:|---:|---:|---|
+| standard Poisson | 6 / 6 | 1 | 1.000 | 0.07143 | PASS |
+| alternative Poisson | 6 / 6 | 1 | 1.000 | 0.07143 | PASS |
+
+Both satisfy the existing test_data_integration.py requirements:
+
+    TPR >= 0.95
+    FPR <= 0.10
+
+The selected directed lag-1 edges were identical for standard and alternative
+in this proxy:
+
+    3 -> 0
+    3 -> 1
+    2 -> 1
+    0 -> 2
+    4 -> 3
+    1 -> 4
+    0 -> 4
+
+Six are true edges and one is a false positive.
+
+Status remains:
+
+    PACKAGE_PYTEST = NOT_VERIFIED
+
+The actual branch must still pass:
+
+    python -m experiments.run_poisson_marginalization_fix_v1
+
+before an upstream PR is opened.
