@@ -1,0 +1,73 @@
+name: Path B theory audits
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - "experiments/path_b_beta_min_audit.py"
+      - "experiments/path_b_beta_min_phase_transition.py"
+      - "experiments/path_b_suppression_phase_transition.py"
+      - "experiments/path_b_true_edge_detectability_audit.py"
+      - "experiments/path_b_screen_certificate_theory.md"
+      - ".github/workflows/path-b-theory-audits.yml"
+  workflow_dispatch:
+
+jobs:
+  theory-audits:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          mkdir -p experiments/results/path_b_theory_ci
+
+      - name: Beta-min parent-sure screening
+        run: |
+          python -m experiments.path_b_beta_min_audit \
+            --nodes 20 50 \
+            --sample-sizes 150 300 \
+            --weight-floors 0.0 0.25 0.5 \
+            --seeds 1 \
+            --retention 0.40 \
+            > experiments/results/path_b_theory_ci/beta_min_screening.json
+
+      - name: Controlled beta-min phase transition
+        run: |
+          python -m experiments.path_b_beta_min_phase_transition \
+            --n-nodes 20 \
+            --T-values 150 300 600 \
+            --beta-values 0.02 0.04 0.08 0.16 \
+            --seeds 2 \
+            --edge-probability 0.10 \
+            --retention 0.40 \
+            --n-shuffles 10 \
+            > experiments/results/path_b_theory_ci/beta_min_phase_transition.json
+
+      - name: Controlled suppression-rescue phase transition
+        run: |
+          python -m experiments.path_b_suppression_phase_transition \
+            --n-nodes 20 \
+            --T 300 \
+            --beta 0.20 \
+            --rho 0.80 \
+            --deltas 0.0 0.05 0.10 0.25 0.50 1.0 \
+            --retention 0.40 \
+            --seeds 20 \
+            > experiments/results/path_b_theory_ci/suppression_phase_transition.json
+
+      - name: Upload theory audit outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-theory-audit-results
+          path: experiments/results/path_b_theory_ci
+          if-no-files-found: warn
