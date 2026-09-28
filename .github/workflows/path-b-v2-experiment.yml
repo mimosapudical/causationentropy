@@ -26,6 +26,15 @@ jobs:
         run: |
           python -m experiments.run_path_b_v2 --mode quick --outdir experiments/results/path_b_v2_ci
 
+      - name: Certified Path B working-set audit
+        run: |
+          python -m experiments.path_b_certified_working_set_audit \
+            --nodes 20 50 \
+            --seeds 1 \
+            --retention 0.40 \
+            --n-shuffles 10 \
+            > experiments/results/path_b_v2_ci/04c_certified_working_set.json
+
       - name: Upload experiment outputs
         if: always()
         uses: actions/upload-artifact@v4
