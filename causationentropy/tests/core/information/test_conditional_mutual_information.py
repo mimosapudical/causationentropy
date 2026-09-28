@@ -80,6 +80,34 @@ class TestGaussianConditionalMutualInformation:
         assert not np.isnan(cmi)
         assert np.isfinite(cmi)
 
+    def test_gaussian_cmi_constant_predictor_is_zero(self):
+        """A deterministic predictor has zero conditional mutual information."""
+        rng = np.random.default_rng(7)
+        n = 200
+        X = np.ones((n, 1))
+        Y = rng.normal(size=(n, 1))
+        Z = rng.normal(size=(n, 2))
+
+        cmi = gaussian_conditional_mutual_information(X, Y, Z)
+
+        assert cmi == 0.0
+
+    def test_gaussian_cmi_constant_nuisance_dimension_is_ignored(self):
+        """Adding a constant conditioning coordinate should not change CMI."""
+        rng = np.random.default_rng(8)
+        n = 300
+        X = rng.normal(size=(n, 1))
+        Z = rng.normal(size=(n, 1))
+        Y = 0.6 * X + 0.4 * Z + 0.2 * rng.normal(size=(n, 1))
+        Z_with_constant = np.hstack([Z, np.ones((n, 1))])
+
+        base = gaussian_conditional_mutual_information(X, Y, Z)
+        augmented = gaussian_conditional_mutual_information(
+            X, Y, Z_with_constant
+        )
+
+        assert np.isclose(base, augmented, rtol=1e-12, atol=1e-12)
+
     def test_gaussian_cmi_identical_variables(self):
         """Test CMI with identical X and Y."""
         np.random.seed(42)
