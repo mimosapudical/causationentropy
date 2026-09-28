@@ -163,6 +163,7 @@ def keyed_backward(
     target,
     alpha=0.05,
     n_shuffles=100,
+    Z_init=None,
 ):
     selected = list(forward)
 
@@ -179,7 +180,16 @@ def keyed_backward(
 
     for local_idx in order_rng.permutation(forward):
         conditioning = [idx for idx in selected if idx != local_idx]
-        Z = X[:, conditioning] if len(selected) > 1 else None
+        Z_selected = X[:, conditioning] if conditioning else None
+        Z = (
+            Z_init
+            if Z_selected is None
+            else (
+                Z_selected
+                if Z_init is None
+                else np.hstack((Z_init, Z_selected))
+            )
+        )
         observed = _observed_cmi(X[:, [local_idx]], Y, Z)
         conditioning_global = [global_ids[idx] for idx in conditioning]
 
@@ -230,6 +240,7 @@ def keyed_ocse(
         target,
         alpha=alpha,
         n_shuffles=n_shuffles,
+        Z_init=Z_init,
     )
     return forward, final
 
