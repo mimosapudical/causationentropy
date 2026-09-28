@@ -224,6 +224,48 @@ def main():
         )
 
     print()
+    print("## Independent Path-A / Poisson audits")
+    print()
+
+    path_a_audit = outdir / "08_path_a_weight_normalization.json"
+    if path_a_audit.exists():
+        payload = load_json(path_a_audit)
+        row = payload["summary"]
+        print(
+            f"- Path A normalization support equality: "
+            f"{fmt(row['support_equality_rate'])}"
+        )
+        print(
+            f"- Path A warnings, sum-normalized vs max-normalized: "
+            f"{row['sum_warning_total']} vs {row['max_warning_total']}"
+        )
+        print(
+            f"- Mean weighted max |X|, sum vs max normalization: "
+            f"{fmt(row['mean_sum_weighted_max_abs'], 6)} vs "
+            f"{fmt(row['mean_max_weighted_max_abs'], 6)}"
+        )
+    else:
+        print("- Path A normalization audit: NOT_RUN")
+
+    poisson_audit = outdir / "08_poisson_rate_structure.json"
+    if poisson_audit.exists():
+        payload = load_json(poisson_audit)
+        low = payload["low_rate_system"]
+        high = payload["high_rate_system"]
+        print(
+            "- Poisson low-rate empirical means vs corrcoef-implied rates: "
+            f"{low['empirical_means']} vs "
+            f"{low['current_corrcoef_implied_rates']}"
+        )
+        print(
+            "- Poisson high-rate empirical means vs corrcoef-implied rates: "
+            f"{high['empirical_means']} vs "
+            f"{high['current_corrcoef_implied_rates']}"
+        )
+    else:
+        print("- Poisson rate-structure audit: NOT_RUN")
+
+    print()
     print("## Nonlinear / estimator audit")
     print()
     for case in ("logistic", "poisson"):
