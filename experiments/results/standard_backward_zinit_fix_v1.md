@@ -11,7 +11,9 @@ The repository's standard-oCSE documentation defines backward elimination with
     Z_-j = Z_init,i union (S_i \ {X_j}).
 
 The implementation currently calls backward without Z_init, so the backward
-phase tests only against the other selected predictors.
+phase tests only against the other selected predictors. After selection,
+discover_network also recomputes each standard edge's displayed CMI/p-value
+without Z_init.
 
 That changes the question being asked:
 
@@ -33,6 +35,8 @@ For each selected j it now constructs:
 when Z_init is provided.
 
 standard_optimal_causation_entropy passes its Z_init.
+discover_network also retains Z_init when recomputing standard edge CMI/p-value
+attributes and in report-all candidate diagnostics.
 alternative_optimal_causation_entropy keeps the default None and is unchanged.
 
 The appended optional parameter preserves existing positional callers.
@@ -70,6 +74,14 @@ At alpha=0.01 with 1000 permutations:
 So the legacy backward phase can delete a predictor that the standard forward
 phase correctly selected specifically because it adds information beyond the
 initial target history.
+
+## Reporting regression
+
+A focused regression patches standard selection to return one edge per target
+and checks that the final CMI reporting calls receive the target's own lagged
+history as their conditioning matrix. This prevents support selection from
+being correct while graph metadata silently uses a different conditional
+quantity.
 
 ## Validation
 
