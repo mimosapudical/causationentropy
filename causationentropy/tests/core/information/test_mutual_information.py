@@ -66,6 +66,28 @@ class TestGaussianMutualInformation:
         assert not np.isnan(mi)
         assert np.isfinite(mi)
 
+    def test_gaussian_mi_constant_predictor_is_zero(self):
+        """A deterministic predictor carries no mutual information."""
+        rng = np.random.default_rng(0)
+        X = np.ones((200, 1))
+        Y = rng.normal(size=(200, 1))
+
+        mi = gaussian_mutual_information(X, Y)
+
+        assert mi == 0.0
+
+    def test_gaussian_mi_constant_nuisance_dimension_is_ignored(self):
+        """Adding a constant coordinate should not change Gaussian MI."""
+        rng = np.random.default_rng(1)
+        signal = rng.normal(size=(300, 1))
+        Y = 0.7 * signal + 0.3 * rng.normal(size=(300, 1))
+        X_with_constant = np.hstack([signal, np.ones((300, 1))])
+
+        base = gaussian_mutual_information(signal, Y)
+        augmented = gaussian_mutual_information(X_with_constant, Y)
+
+        assert np.isclose(base, augmented, rtol=1e-12, atol=1e-12)
+
     def test_gaussian_mi_dimension_mismatch(self):
         """Test behavior when X and Y have different number of samples."""
         X = np.random.normal(0, 1, (50, 2))
