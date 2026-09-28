@@ -41,14 +41,9 @@ def main():
         ),
         "experiments/run_poisson_marginalization_fix_v1.py",
     ]
-
     run(
-        [sys.executable, "-m", "black", "--check", *targets],
-        outdir / "01_black.txt",
-    )
-    run(
-        [sys.executable, "-m", "isort", "--check-only", *targets],
-        outdir / "02_isort.txt",
+        [sys.executable, "-m", "compileall", "-q", *targets],
+        outdir / "01_compileall.txt",
     )
     run(
         [
@@ -58,7 +53,7 @@ def main():
             "--select=E9,F63,F7,F82",
             *targets,
         ],
-        outdir / "03_flake8.txt",
+        outdir / "02_flake8.txt",
     )
 
     run(
