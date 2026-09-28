@@ -207,3 +207,73 @@ A credible methods paper still needs all of the following.
 - runtime/accuracy phase-transition figures;
 - limitations section defining the Gaussian/stable-VAR scope if nonlinear
   performance is not solved.
+
+
+## F. September 28 theory/phase-transition update
+
+### F1. One-shot rescue condition is empirically exact in the audited regimes
+
+For the deterministic condition
+
+[
+q\ge |M|+h(A),
+]
+
+where (M) is the Path-A missed-parent set and (h(A)) counts excluded
+nonparents that outrank the weakest missed parent under
+(I(X_j;Y\mid X_A)), the audit found:
+
+- zero cases where the condition held but rescue failed;
+- zero cases where the condition failed but rescue nevertheless succeeded.
+
+Examples at N=50, T=300:
+- no floor: condition/rescue success on 52.5% of Path-A-incomplete targets;
+- raw weight floor 0.25: 92%;
+- raw weight floor 0.50: 100%;
+- hidden-parent stress: 100%.
+
+The median conditional-competition count fell from 15 nonparents at no floor
+to 4 at floor 0.25 and 0 at floor 0.50.  This gives a direct finite-sample
+explanation for the beta-min phase transition of the one-shot rescue.
+
+### F2. Multiseed beta-min phase transition is stable
+
+N=50, three graph seeds, 40% retention:
+
+| T | raw-weight floor | realized beta-min | Path-A parent recall | Path-B parent recall | Path-B parent-complete targets |
+|---:|---:|---:|---:|---:|---:|
+| 150 | 0.00 | 0.0019 | 0.658 | 0.864 | 0.486 |
+| 150 | 0.10 | 0.0453 | 0.692 | 0.901 | 0.628 |
+| 150 | 0.25 | 0.0978 | 0.760 | 0.958 | 0.838 |
+| 150 | 0.50 | 0.1620 | 0.847 | 0.985 | 0.932 |
+| 300 | 0.00 | 0.0019 | 0.758 | 0.917 | 0.669 |
+| 300 | 0.10 | 0.0453 | 0.811 | 0.958 | 0.831 |
+| 300 | 0.25 | 0.0978 | 0.892 | 0.994 | 0.973 |
+| 300 | 0.50 | 0.1620 | 0.969 | 1.000 | 1.000 |
+| 600 | 0.00 | 0.0019 | 0.810 | 0.936 | 0.723 |
+| 600 | 0.10 | 0.0453 | 0.871 | 0.986 | 0.939 |
+| 600 | 0.25 | 0.0978 | 0.960 | 0.999 | 0.993 |
+| 600 | 0.50 | 0.1620 | 0.999 | 1.000 | 1.000 |
+
+The monotone improvement with both sample size and minimum signal is the
+qualitative behavior predicted by the parent-sure screening theorem.
+
+### F3. True-parent retention frontier
+
+The minimum useful candidate budget is signal-dependent rather than a universal
+40% constant.
+
+Examples, N=50 and three seeds:
+
+- T=600, floor 0.50: 10% retention already gives 100% parent recall and 100%
+  parent-complete targets.
+- T=600, floor 0.25: 20% gives 99.72% recall / 98.65% complete targets; 30%
+  gives 99.86% / 99.32%; 50% reaches 100%.
+- T=300, floor 0.50: 30% gives 99.86% / 99.32%; 40% reaches 100%.
+- T=300, floor 0.25: 30% gives 98.75% / 95.27%; 40% gives 99.44% / 97.30%.
+- no-floor T=600: even 50% reaches only 95.28% recall, consistent with the
+  generator containing near-zero structural edges.
+
+Interpretation:
+candidate retention should be treated as a statistical/computational operating
+point governed by signal strength and sample size, not as a magic constant.
