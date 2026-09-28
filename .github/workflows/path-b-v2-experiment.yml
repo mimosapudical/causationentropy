@@ -1,0 +1,44 @@
+name: Path B v2 experiment validation
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+  workflow_dispatch:
+
+jobs:
+  focused-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest
+
+      - name: Focused Path B v2 tests
+        run: |
+          python -m pytest -q             causationentropy/tests/test_path_b_v2_engineering.py             causationentropy/tests/test_path_b_benchmark_smoke.py
+
+      - name: Discovery and Gaussian-CMI regression
+        run: |
+          python -m pytest -q             causationentropy/tests/test_discovery.py             causationentropy/tests/core/information/test_conditional_mutual_information.py
+
+      - name: Quick Path B v2 validation
+        run: |
+          python -m experiments.run_path_b_v2             --mode quick             --outdir experiments/results/path_b_v2_ci
+
+      - name: Upload experiment outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-v2-ci-results
+          path: experiments/results/path_b_v2_ci
+          if-no-files-found: warn
