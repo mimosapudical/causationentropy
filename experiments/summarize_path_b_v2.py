@@ -297,6 +297,16 @@ def main():
     else:
         print("- Self-history candidate audit: NOT_RUN")
 
+    significant_audit = outdir / "08_only_return_significant.json"
+    if significant_audit.exists():
+        payload = load_json(significant_audit)
+        print(
+            "- only_return_significant=True with forced final Pass=False "
+            f"returned edges: {payload['returned_edge_count']}"
+        )
+    else:
+        print("- only_return_significant audit: NOT_RUN")
+
     print()
     print("## Nonlinear / estimator audit")
     print()
