@@ -424,6 +424,7 @@ def standard_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
+        Z_init=Z_init,
     )
 
     return S
@@ -812,6 +813,7 @@ def backward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
+    Z_init=None,
 ):
     r"""
     Backward elimination phase of optimal Causation Entropy.
@@ -865,8 +867,16 @@ def backward(
     S = copy.deepcopy(S_init)  # working copy
 
     for j in rng.permutation(S_init):
-        # conditioning set Z = S \ {j}
-        Z = X_full[:, [k for k in S if k != j]] if len(S) > 1 else None
+        # Condition on the initial set (standard oCSE) plus every other
+        # currently selected predictor. Alternative oCSE leaves Z_init=None.
+        other_ids = [k for k in S if k != j]
+        Z_selected = X_full[:, other_ids] if other_ids else None
+        if Z_init is None:
+            Z = Z_selected
+        elif Z_selected is None:
+            Z = Z_init
+        else:
+            Z = np.hstack((Z_init, Z_selected))
 
         Xj = X_full[:, [j]]
         cmij = conditional_mutual_information(
