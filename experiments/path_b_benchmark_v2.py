@@ -99,16 +99,30 @@ def discovery_work_counter():
 
 def edge_set(graph):
     return {
-        (int(str(u).lstrip("X")), int(str(v).lstrip("X")), int(data.get("lag", 1)))
+        (
+            int(str(u).lstrip("X")),
+            int(str(v).lstrip("X")),
+            int(data.get("lag", 1)),
+        )
         for u, v, data in graph.edges(data=True)
+        if int(str(u).lstrip("X")) != int(str(v).lstrip("X"))
     }
+
+
+def candidate_ids_for_target(feature_names, target):
+    """External lagged predictors considered by standard oCSE."""
+    return [
+        idx
+        for idx, (source, _lag) in enumerate(feature_names)
+        if source != target
+    ]
 
 
 def metrics(truth, predicted, n_nodes, max_lag):
     tp = len(truth & predicted)
     fp = len(predicted - truth)
     fn = len(truth - predicted)
-    total = n_nodes * n_nodes * max_lag
+    total = n_nodes * (n_nodes - 1) * max_lag
     tn = max(0, total - len(truth) - fp)
     precision = tp / (tp + fp) if tp + fp else 1.0
     recall = tp / (tp + fn) if tp + fn else 1.0
@@ -175,8 +189,13 @@ def run_full_standard_matched(
                     for lag in range(1, max_lag + 1)
                 ]
             )
-            support = standard_optimal_causation_entropy(
-                X,
+            candidate_ids = candidate_ids_for_target(
+                feature_names,
+                target,
+            )
+            X_candidates = X[:, candidate_ids]
+            support_local = standard_optimal_causation_entropy(
+                X_candidates,
                 Y,
                 Z_init,
                 rng,
@@ -186,13 +205,21 @@ def run_full_standard_matched(
                 information=information,
                 reuse_gaussian_context=(information == "gaussian"),
             )
-            support = [int(idx) for idx in support]
+            support = [
+                int(candidate_ids[int(local_idx)])
+                for local_idx in support_local
+            ]
             support_by_target[target] = set(support)
 
             for global_idx in support:
                 source, lag = feature_names[global_idx]
                 others = [idx for idx in support if idx != global_idx]
-                Z_cond = X[:, others] if others else None
+                Z_selected = X[:, others] if others else None
+                Z_cond = (
+                    Z_init
+                    if Z_selected is None
+                    else np.hstack((Z_init, Z_selected))
+                )
                 X_predictor = X[:, [global_idx]]
                 work["output_observed_cmi_scores"] += 1
                 cmi = conditional_mutual_information(
@@ -258,21 +285,34 @@ def run_path_b_v2(
             Y = Y_all[:, [target]]
             rng = np.random.default_rng(seed * 10000 + target)
 
+            candidate_ids = candidate_ids_for_target(
+                feature_names,
+                target,
+            )
+            X_candidates = X[:, candidate_ids]
+
             start_screen = time.perf_counter()
-            screened, diag = endpoint_plus_conditional_rescue(
-                X,
+            screened_local, diag = endpoint_plus_conditional_rescue(
+                X_candidates,
                 Y,
                 rng,
                 retention=retention,
                 information=information,
             )
             screen_seconds += time.perf_counter() - start_screen
+            screened = [
+                int(candidate_ids[int(local_idx)])
+                for local_idx in screened_local
+            ]
             screened_total += len(screened)
             endpoint_total += diag["endpoint_size"]
             rescued_total += diag["rescued"]
-            screen_marginal_cmi_scores += X.shape[1]
-            screen_rescue_cmi_scores += max(0, X.shape[1] - diag["endpoint_size"])
-            screen_by_target[target] = set(int(idx) for idx in screened)
+            screen_marginal_cmi_scores += X_candidates.shape[1]
+            screen_rescue_cmi_scores += max(
+                0,
+                X_candidates.shape[1] - diag["endpoint_size"],
+            )
+            screen_by_target[target] = set(screened)
 
             if not screened:
                 support_by_target[target] = set()
@@ -304,9 +344,16 @@ def run_path_b_v2(
 
                 # Match discover_network's output-stage work so runtime comparisons
                 # do not favor Path B by omitting final edge CMI/p-value reporting.
-                other_local = [idx for idx in refined_local if idx != local_idx]
+                other_local = [
+                    idx for idx in refined_local if idx != local_idx
+                ]
                 other_global = [screened[int(idx)] for idx in other_local]
-                Z_cond = X[:, other_global] if other_global else None
+                Z_selected = X[:, other_global] if other_global else None
+                Z_cond = (
+                    Z_init
+                    if Z_selected is None
+                    else np.hstack((Z_init, Z_selected))
+                )
                 X_predictor = X[:, [global_idx]]
                 work["output_observed_cmi_scores"] += 1
                 cmi = conditional_mutual_information(
@@ -335,7 +382,7 @@ def run_path_b_v2(
                 )
 
     total_seconds = time.perf_counter() - start_total
-    total_candidates = n_nodes * X.shape[1]
+    total_candidates = n_nodes * (n_nodes - 1) * max_lag
     return graph, {
         "runtime_seconds": total_seconds,
         "screen_runtime_seconds": screen_seconds,
