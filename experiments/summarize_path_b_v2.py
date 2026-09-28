@@ -103,6 +103,46 @@ def main():
         print("No Gaussian result files found.")
 
     print()
+    print("## Gaussian scaling")
+    print()
+    scale_files = sorted(outdir.glob("06_scale_n*_seed_*.json"))
+    if scale_files:
+        grouped = {}
+        for path in scale_files:
+            payload = load_json(path)["gaussian"]
+            n_nodes = int(payload["config"]["n_nodes"])
+            grouped.setdefault(n_nodes, []).append(payload)
+
+        print("| N | Runs | Candidate retention | Screen recall | Refined recall | Full runtime (s) | Path-B runtime (s) | Speedup |")
+        print("|---:|---:|---:|---:|---:|---:|---:|---:|")
+        for n_nodes in sorted(grouped):
+            rows = grouped[n_nodes]
+            full_runtime = [row["standard"]["runtime_seconds"] for row in rows]
+            path_runtime = [row["path_b_v2"]["runtime_seconds"] for row in rows]
+            speedups = [
+                full / path
+                for full, path in zip(full_runtime, path_runtime)
+                if path > 0
+            ]
+            retention = [
+                row["path_b_v2"]["candidate_retention"] for row in rows
+            ]
+            screen_recall = [
+                row["path_b_v2"]["screen_full_support_recall"] for row in rows
+            ]
+            refined_recall = [
+                row["path_b_v2"]["refined_full_support_recall"] for row in rows
+            ]
+            print(
+                f"| {n_nodes} | {len(rows)} | {fmt(mean(retention))} | "
+                f"{fmt(mean(screen_recall))} | {fmt(mean(refined_recall))} | "
+                f"{fmt(mean(full_runtime), 2)} | {fmt(mean(path_runtime), 2)} | "
+                f"{fmt(mean(speedups), 2)}x |"
+            )
+    else:
+        print("Scaling benchmark: NOT_RUN")
+
+    print()
     print("## Stress diagnostics")
     print()
     for name, row in frontier["stress"].items():
@@ -116,7 +156,9 @@ def main():
     print("## Nonlinear / estimator audit")
     print()
     for case in ("logistic", "poisson"):
-        path = outdir / f"06_{case}_seed_0.json"
+        path = outdir / f"07_{case}_seed_0.json"
+        if not path.exists():
+            path = outdir / f"06_{case}_seed_0.json"
         if not path.exists():
             print(f"- {case}: NOT_RUN")
             continue
