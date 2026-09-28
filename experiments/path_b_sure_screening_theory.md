@@ -828,3 +828,192 @@ The theorem also explains the observed beta-min transition: stronger structural
 signals reduce both the number of parents missed by Path A and the number of
 nonparents competitive with the weakest missed parent, increasing the rescue
 margin and decreasing the required budget.
+
+
+## 15. Stable-Gaussian-VAR parent-sure corollary from Basu--Michailidis
+
+Basu and Michailidis (2015) provide the two probability ingredients needed by
+the deterministic weighted-Lasso lemma for a stable Gaussian VAR(d).
+
+For a (p)-dimensional stable VAR(d), their Proposition 4.2 gives, with high
+probability and sample size of order
+
+[
+N
+gtrsim
+max{omega^2,1},s(log d+log p),
+]
+
+an RE-with-tolerance event for the sample Gram matrix,
+
+[
+v^	opwidehatGamma v
+ge
+alpha|v|_2^2-	au|v|_1^2,
+]
+
+with
+
+[
+alpha
+=
+rac{Lambda_{min}(Sigma_arepsilon)}
+{2mu_{max}(mathcal A)},
+qquad
+	au
+=
+alphamax{omega^2,1}
+rac{log d+log p}{N},
+]
+
+and (omega) determined by the spectral stability of the VAR and innovation
+covariance.
+
+Their Proposition 4.3 supplies the score/deviation event
+
+[
+left|
+rac{X^	oparepsilon}{N}
+ight|_infty
+le
+Q(A,Sigma_arepsilon)
+sqrt{rac{log d+2log p}{N}}
+]
+
+with high probability (specializing their multivariate notation to one target
+regression).
+
+### Transfer to the information-weighted design
+
+Let (widetilde X=XD_a), with (0le a_jle1), and suppose the true-parent
+weights obey (a_jge a_{min}>0) for (jin S).
+
+The deviation condition transfers pointwise, even though the weights are
+data-dependent:
+
+[
+left|
+rac{widetilde X^	oparepsilon}{N}
+ight|_infty
+=
+left|
+D_arac{X^	oparepsilon}{N}
+ight|_infty
+le
+left|
+rac{X^	oparepsilon}{N}
+ight|_infty.
+]
+
+For a Lasso error vector (Delta) in the usual cone
+(|Delta_{S^c}|_1le3|Delta_S|_1), set
+(gamma=D_aDelta).  The Basu--Michailidis RE-with-tolerance inequality gives
+
+[
+rac{|widetilde XDelta|_2^2}{N}
+=
+gamma^	opwidehatGammagamma
+ge
+alpha|gamma|_2^2-	au|gamma|_1^2.
+]
+
+Using
+
+[
+|gamma|_2^2
+ge
+a_{min}^2|Delta_S|_2^2
+]
+
+and
+
+[
+|gamma|_1
+le
+|Delta|_1
+le
+4|Delta_S|_1
+le
+4sqrt{s}|Delta_S|_2,
+]
+
+we obtain
+
+[
+rac{|widetilde XDelta|_2^2}{N}
+ge
+left(
+alpha a_{min}^2-16	au s
+ight)
+|Delta_S|_2^2.
+]
+
+Thus a valid weighted cone-RE constant is
+
+[
+kappa_w^2
+=
+alpha a_{min}^2-16	au s
+]
+
+whenever the right-hand side is positive.
+
+Choose, conservatively in the normalization of Basu--Michailidis,
+
+[
+lambda_N
+ge
+4Q(A,Sigma_arepsilon)
+sqrt{rac{log d+2log p}{N}}.
+]
+
+On the intersection of the RE, deviation, and parent-weight visibility events,
+the deterministic no-false-negative result therefore implies parent-sure
+screening whenever
+
+[
+	heta_{min}
+>
+rac{3lambda_Nsqrt{s}}{kappa_w^2}.
+]
+
+Because max-normalized information weights satisfy (a_jle1),
+
+[
+	heta_{min}
+=
+min_{jin S}rac{|eta_j^*|}{a_j}
+ge
+eta_{min},
+]
+
+so the more conservative but directly interpretable sufficient condition is
+
+[
+oxed{
+eta_{min}
+>
+rac{
+3lambda_Nsqrt{s}
+}{
+alpha a_{min}^2-16	au s
+}
+}
+]
+
+together with
+(alpha a_{min}^2>16	au s).
+
+This closes most of the stable-VAR probability bridge for the **theoretically
+calibrated** weighted-Lasso screen.  Two items remain before treating it as a
+finished paper theorem:
+
+1. derive the parent information-weight visibility event
+   (a_{min}ge a_0) with an explicit probability from a uniform covariance /
+   correlation concentration bound for the same stable VAR;
+2. reconcile the theorem-calibrated (lambda_N) with the production
+   BIC/LassoCV tuning policy (or expose a theorem-calibrated tuning option).
+
+Reference:
+Sumanta Basu and George Michailidis, "Regularized estimation in sparse
+high-dimensional time series models", Annals of Statistics 43(4), 2015.
