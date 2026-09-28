@@ -24,46 +24,65 @@ opportunities for us.
 
 ## 2. New high-value findings from this audit
 
-### A. Poisson rate-structure collapse
+### A. Poisson conditional marginalization
 
-Current Poisson MI/CMI code begins from np.corrcoef and then passes a derived
-matrix into poisson_joint_entropy, whose diagonal is treated as marginal
-Poisson rate/variance information.
+The first Poisson audit initially suspected that using np.corrcoef instead of
+covariance was a bug. Reading the full Fish-Sun-Bollt paper corrected that
+interpretation.
 
-Correlation normalization forces the original diagonal to one. Replaying the
-current construction therefore produces an implied marginal rate vector of
-approximately [1, 1, ...] regardless of the observed count scale.
+The paper explicitly states that its network experiments intentionally estimate
+the shared rates from pairwise correlations rather than covariances, because
+correlations keep the surrogate rates small enough for the joint-entropy
+approximation. Their Eq. (46) then recovers the private rate with
 
-A formula-level local reproduction using shared-Poisson samples gave:
+    lambda_ii = e_ii - sum_{j != i} lambda_ij.
 
-- low-rate empirical means about [5.0086, 10.0528] -> implied [1.0, 1.0];
-- high-rate empirical means about [49.9618, 99.9160] -> implied [1.0, 1.0].
+Therefore, the unit diagonal produced by correlation scaling is intentional and
+is NOT itself a correctness defect.
 
-This reproduction uses the same corrcoef-to-implied-rate algebra as the current
-estimator; it is not yet a full package-level regression run.
+The actual defect is in the conditional branch:
 
-Why this matters:
+1. the current diagonal update uses
 
-- The Fish–Sun–Bollt Poisson estimator is specifically intended to use
-  multivariate Poisson intensity/covariance structure.
-- PR #42 fixes the conditional-MI sign but does not address the loss of marginal
-  count scale.
-- This is a plausible explanation for the current Poisson benchmark mismatch.
+       np.fill_diagonal(SS, np.diagonal(SS) - Sa)
 
-Fork diagnostic:
+   rather than subtracting the sum of the shared off-diagonal rates;
+2. the H(X,Z), H(Y,Z), and H(Z) marginals do not consistently absorb shared
+   components involving variables that were marginalized out;
+3. multivariate X/Y partitions can fail because rectangular cross-blocks are
+   added directly to square blocks.
+
+Formula-level reproduction on a shared-Poisson construction found:
+
+- current raw conditional CMI: about -0.2407;
+- dispatcher value after non-negativity clamp: 0;
+- direct Eq. (38)-consistent entropy decomposition: about +0.1169.
+
+For a multivariate partition with X in R^2 and Y in R^3, the current
+implementation raised a broadcasting ValueError, while the Eq. (38)
+decomposition returned finite, X/Y-symmetric values.
+
+Fork diagnostics:
 
     experiments/poisson_rate_structure_audit.py
+    experiments/poisson_conditional_marginalization_audit.py
 
-Recommended next action:
+The first file is retained only to document the paper's intentional correlation
+scaling. The second file targets the actual bug.
 
-1. reproduce the exact estimator equations from Fish, Sun & Bollt,
-   Applied Network Science 2022, DOI 10.1007/s41109-022-00510-x;
-2. verify whether the estimator expects empirical covariance, a reconstructed
-   latent-component intensity matrix, or another moment parameter;
-3. only then implement a separate Poisson-correctness PR.
+A separate experimental correction lives on:
 
-This would change estimator values and potentially graph accuracy, so it must
-not be bundled with exact Path-B acceleration.
+    experiment/poisson-marginalization-fix-v1
+
+That branch keeps correlation scaling and rewrites Poisson CMI directly as
+
+    H(X,Z) + H(Y,Z) - H(X,Y,Z) - H(Z),
+
+with each retained variable set receiving its own Eq. (46) rate reconstruction.
+
+This is independent of Path B and should become a separate correctness PR only
+after the package-level Poisson tests and integration benchmark pass.
+
 
 ### B. Gaussian constant-feature singularity
 
@@ -277,15 +296,17 @@ Read:
 Only create a Path-A follow-up PR if the audits show a clear numerical or
 correctness gain without introducing a new modeling choice.
 
-### Priority 3 — Poisson estimator correction as a separate project
+### Priority 3 — Poisson conditional-marginalization correction
 
 Read:
 
-- 08_poisson_rate_structure.json
+- 08_poisson_rate_structure.json;
+- 08_poisson_conditional_marginalization.json.
 
-Then reproduce the 2022 Poisson estimator mathematics before touching core
-code.  This could be a substantial correctness contribution independent of
-Path B.
+The paper mathematics has now been checked: correlation scaling is intentional,
+while the conditional marginalization is the actual defect. Validate the
+separate branch experiment/poisson-marginalization-fix-v1 against the full
+Poisson unit/integration tests before preparing any upstream PR.
 
 ### Priority 4 — deeper Gaussian exact fast path
 
