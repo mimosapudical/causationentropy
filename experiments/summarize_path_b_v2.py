@@ -250,20 +250,34 @@ def main():
     poisson_audit = outdir / "08_poisson_rate_structure.json"
     if poisson_audit.exists():
         payload = load_json(poisson_audit)
-        low = payload["low_rate_system"]
-        high = payload["high_rate_system"]
         print(
-            "- Poisson low-rate empirical means vs corrcoef-implied rates: "
-            f"{low['empirical_means']} vs "
-            f"{low['current_corrcoef_implied_rates']}"
-        )
-        print(
-            "- Poisson high-rate empirical means vs corrcoef-implied rates: "
-            f"{high['empirical_means']} vs "
-            f"{high['current_corrcoef_implied_rates']}"
+            "- Poisson correlation-rate scaling: intentional paper behavior "
+            f"(bug claim valid={payload['diagnostic']['bug_claim_valid']})"
         )
     else:
-        print("- Poisson rate-structure audit: NOT_RUN")
+        print("- Poisson rate-scaling audit: NOT_RUN")
+
+    poisson_conditional = (
+        outdir / "08_poisson_conditional_marginalization.json"
+    )
+    if poisson_conditional.exists():
+        payload = load_json(poisson_conditional)
+        scalar = payload["scalar_shared_poisson"]
+        multi = payload["multivariate_partition"]
+        print(
+            "- Poisson conditional CMI, current raw / dispatcher / "
+            "paper-consistent: "
+            f"{fmt(scalar['current_raw_cmi'], 6)} / "
+            f"{fmt(scalar['current_dispatcher_value'], 6)} / "
+            f"{fmt(scalar['paper_consistent_cmi'], 6)}"
+        )
+        print(
+            "- Poisson multivariate current status / corrected symmetry error: "
+            f"{multi['current']['status']} / "
+            f"{fmt(multi['symmetry_abs_error'], 12)}"
+        )
+    else:
+        print("- Poisson conditional-marginalization audit: NOT_RUN")
 
     gaussian_audit = outdir / "08_gaussian_constant_feature.json"
     if gaussian_audit.exists():
