@@ -16,7 +16,7 @@ Reference
 ---------
 Fish, Sun & Bollt, Applied Network Science (2022),
 doi:10.1007/s41109-022-00510-x.
-"
+"""
 
 import argparse
 import json
