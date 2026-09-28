@@ -92,7 +92,7 @@ def main():
         scale_shuffles = 20
         nonlinear_seeds = (0, 1, 2)
 
-    print("== [1/9] Style / syntax gates ==")
+    print("== [1/10] Style / syntax gates ==")
     style_targets = [
         "causationentropy/core/discovery.py",
         "causationentropy/core/information/conditional_mutual_information.py",
@@ -102,6 +102,8 @@ def main():
         "experiments/path_b_benchmark_v2.py",
         "experiments/path_b_common_random_numbers.py",
         "experiments/path_b_screen_frontier_v2.py",
+        "experiments/path_a_weight_normalization_audit.py",
+        "experiments/poisson_rate_structure_audit.py",
         "experiments/run_path_b_v2.py",
         "experiments/summarize_path_b_v2.py",
     ]
@@ -128,7 +130,7 @@ def main():
                 text=True,
             )
 
-    print("== [2/9] Focused engineering tests ==")
+    print("== [2/10] Focused engineering tests ==")
     focused = [
         sys.executable,
         "-m",
@@ -146,7 +148,7 @@ def main():
             text=True,
         )
 
-    print("== [3/9] Discovery + information regression ==")
+    print("== [3/10] Discovery + information regression ==")
     regression = [
         sys.executable,
         "-m",
@@ -167,7 +169,7 @@ def main():
             text=True,
         )
 
-    print("== [4/9] Screening frontier + stress diagnostics ==")
+    print("== [4/10] Screening frontier + stress diagnostics ==")
     run_command(
         python_module(
             "experiments.path_b_screen_frontier_v2",
@@ -179,7 +181,7 @@ def main():
         outdir / "03_screen_frontier.json",
     )
 
-    print("== [5/9] Common-random-number path diagnostic ==")
+    print("== [5/10] Common-random-number path diagnostic ==")
     run_command(
         python_module(
             "experiments.path_b_common_random_numbers",
@@ -191,7 +193,7 @@ def main():
         outdir / "04_common_random_numbers.json",
     )
 
-    print("== [6/9] End-to-end Gaussian accuracy benchmark ==")
+    print("== [6/10] End-to-end Gaussian accuracy benchmark ==")
     for seed in range(seeds):
         run_command(
             python_module(
@@ -208,7 +210,7 @@ def main():
             outdir / f"05_gaussian_seed_{seed}.json",
         )
 
-    print("== [7/9] Gaussian scaling benchmark ==")
+    print("== [7/10] Gaussian scaling benchmark ==")
     for n_nodes in scale_nodes:
         T = max(300, 5 * n_nodes)
         for seed in range(scale_seeds):
@@ -231,7 +233,7 @@ def main():
                 outdir / f"06_scale_n{n_nodes}_seed_{seed}.json",
             )
 
-    print("== [8/9] Nonlinear logistic + Poisson estimator audit ==")
+    print("== [8/10] Nonlinear logistic + Poisson estimator audit ==")
     for seed in nonlinear_seeds:
         run_command(
             python_module(
@@ -270,7 +272,33 @@ def main():
         encoding="utf-8",
     )
 
-    print("== [9/9] Markdown summary ==")
+    print("== [9/10] Independent Path-A / Poisson audits ==")
+    path_a_nodes = 20 if args.mode == "quick" else 50
+    path_a_seeds = 1 if args.mode == "quick" else 10
+    run_command(
+        python_module(
+            "experiments.path_a_weight_normalization_audit",
+            "--n-nodes",
+            path_a_nodes,
+            "--T",
+            300,
+            "--seeds",
+            path_a_seeds,
+        ),
+        outdir / "08_path_a_weight_normalization.json",
+    )
+    run_command(
+        python_module(
+            "experiments.poisson_rate_structure_audit",
+            "--seed",
+            0,
+            "--n-samples",
+            5000,
+        ),
+        outdir / "08_poisson_rate_structure.json",
+    )
+
+    print("== [10/10] Markdown summary ==")
     summary_path = outdir / "08_summary.md"
     with summary_path.open("w", encoding="utf-8") as handle:
         subprocess.run(
