@@ -56,11 +56,12 @@ jobs:
       - name: Controlled suppression-rescue phase transition
         run: |
           python -m experiments.path_b_suppression_phase_transition \
-            --n-nodes 20 \
-            --T 300 \
-            --beta 0.20 \
-            --rho 0.80 \
-            --deltas 0.0 0.05 0.10 0.25 0.50 1.0 \
+            --n-nodes 50 \
+            --T 200 \
+            --beta 0.12 \
+            --gamma -0.15 \
+            --rhos 0.0 0.2 0.4 0.6 0.7 0.75 0.8 \
+            --noise-scale 0.15 \
             --retention 0.40 \
             --seeds 20 \
             > experiments/results/path_b_theory_ci/suppression_phase_transition.json
