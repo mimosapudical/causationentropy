@@ -1,0 +1,44 @@
+name: Path B beta-min end-to-end frontier
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - "experiments/path_b_beta_min_end_to_end.py"
+      - ".github/workflows/path-b-beta-min-end-to-end.yml"
+  workflow_dispatch:
+
+jobs:
+  beta-min-end-to-end:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run beta-min end-to-end frontier
+        run: |
+          mkdir -p experiments/results/path_b_beta_min_e2e
+          python -m experiments.path_b_beta_min_end_to_end \
+            --n-nodes 50 \
+            --sample-sizes 300 600 \
+            --weight-floors 0.25 0.5 \
+            --retentions 0.20 0.30 0.40 \
+            --seeds 3 \
+            --n-shuffles 20 \
+            > experiments/results/path_b_beta_min_e2e/end_to_end.json
+
+      - name: Upload beta-min end-to-end result
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-beta-min-end-to-end-results
+          path: experiments/results/path_b_beta_min_e2e
