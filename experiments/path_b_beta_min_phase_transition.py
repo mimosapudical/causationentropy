@@ -299,6 +299,27 @@ def _aggregate(rows):
             if sum(row["full_time_sec"] for row in rows) > 0
             else None
         ),
+        "wallclock_ratio_total_path_b_over_full": (
+            sum(
+                row["screen_time_sec"] + row["restricted_time_sec"]
+                for row in rows
+            )
+            / sum(row["full_time_sec"] for row in rows)
+            if sum(row["full_time_sec"] for row in rows) > 0
+            else None
+        ),
+        "end_to_end_speedup": (
+            sum(row["full_time_sec"] for row in rows)
+            / sum(
+                row["screen_time_sec"] + row["restricted_time_sec"]
+                for row in rows
+            )
+            if sum(
+                row["screen_time_sec"] + row["restricted_time_sec"]
+                for row in rows
+            ) > 0
+            else None
+        ),
     }
 
 
