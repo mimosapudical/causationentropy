@@ -1,17 +1,22 @@
-"""Audit the rate structure used by the current Poisson information estimator.
+"""Document the Poisson estimator's intentional correlation-rate scaling.
 
-The current Poisson MI/CMI code starts from np.corrcoef and then feeds the
-result into poisson_joint_entropy, whose diagonal is interpreted as Poisson
-rate/variance parameters. Correlation normalization forces those diagonals to
-one, so this experiment makes the loss of marginal-rate information explicit.
+This file originally treated the use of np.corrcoef as a suspected bug. The
+Fish-Sun-Bollt paper explicitly states that its network experiments estimate
+the shared rates from correlations rather than covariances so that the surrogate
+rates remain in the small-rate regime where the entropy approximation is most
+accurate (their Eq. 46 and Results discussion).
 
-This is a diagnostic only. It does not propose a replacement estimator.
+The diagnostic is retained to make the scaling visible, but the collapse of the
+marginal correlation diagonal to one is NOT itself considered a bug.
+
+The separate poisson_conditional_marginalization_audit.py targets the actual
+conditional-marginalization defect found later.
 
 Reference
 ---------
 Fish, Sun & Bollt, Applied Network Science (2022),
 doi:10.1007/s41109-022-00510-x.
-"""
+"
 
 import argparse
 import json
@@ -79,13 +84,16 @@ def run_audit(seed=0, n_samples=5000):
         "low_rate_system": summarize(low),
         "high_rate_system": summarize(high),
         "diagnostic": {
-            "expected_behavior": (
-                "Poisson rate/variance structure should retain marginal count scale."
+            "paper_behavior": (
+                "Correlation is intentionally used as a scaled rate surrogate "
+                "so estimated rates remain small."
             ),
-            "current_behavior": (
-                "The corrcoef-based construction yields unit marginal rates "
-                "independent of the observed count scale."
+            "observed_behavior": (
+                "The corrcoef-based construction yields unit total marginal "
+                "surrogate rates independent of raw count scale."
             ),
+            "bug_claim_valid": False,
+            "superseded_by": "poisson_conditional_marginalization_audit.py",
             "estimator_changed": False,
         },
     }
