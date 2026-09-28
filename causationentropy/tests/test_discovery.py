@@ -12,6 +12,78 @@ from causationentropy.core.discovery import (
 )
 
 
+class TestOnlyReturnSignificantContract:
+    """Regression tests for final graph significance reporting."""
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch(
+        "causationentropy.core.discovery.conditional_mutual_information"
+    )
+    @patch(
+        "causationentropy.core.discovery."
+        "lasso_optimal_causation_entropy"
+    )
+    def test_significant_only_drops_failed_selected_edge(
+        self, mock_lasso, mock_cmi, mock_shuffle
+    ):
+        """A selected LASSO support edge must still pass final significance."""
+        mock_lasso.return_value = [0]
+        mock_cmi.return_value = 0.1
+        mock_shuffle.return_value = {
+            "Threshold": 0.2,
+            "Value": 0.1,
+            "Pass": False,
+            "P_value": 0.9,
+        }
+        data = np.random.default_rng(0).normal(size=(40, 2))
+
+        graph = discover_network(
+            data,
+            method="lasso",
+            max_lag=1,
+            n_shuffles=3,
+            only_return_significant=True,
+        )
+
+        assert graph.number_of_edges() == 0
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch(
+        "causationentropy.core.discovery.conditional_mutual_information"
+    )
+    @patch(
+        "causationentropy.core.discovery."
+        "lasso_optimal_causation_entropy"
+    )
+    def test_report_all_uses_final_pass_for_significant_attribute(
+        self, mock_lasso, mock_cmi, mock_shuffle
+    ):
+        """Report-all metadata should reflect each final shuffle decision."""
+        mock_lasso.return_value = [0]
+        mock_cmi.return_value = 0.1
+        mock_shuffle.return_value = {
+            "Threshold": 0.2,
+            "Value": 0.1,
+            "Pass": False,
+            "P_value": 0.9,
+        }
+        data = np.random.default_rng(1).normal(size=(40, 2))
+
+        graph = discover_network(
+            data,
+            method="lasso",
+            max_lag=1,
+            n_shuffles=3,
+            only_return_significant=False,
+        )
+
+        assert graph.number_of_edges() == 4
+        assert all(
+            attrs["significant"] is False
+            for _, _, attrs in graph.edges(data=True)
+        )
+
+
 class TestDiscoverNetwork:
     """Test the main causal discovery function."""
 
