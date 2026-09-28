@@ -30,10 +30,17 @@ Current Poisson MI/CMI code begins from np.corrcoef and then passes a derived
 matrix into poisson_joint_entropy, whose diagonal is treated as marginal
 Poisson rate/variance information.
 
-Correlation normalization forces the original diagonal to one.  Replaying the
+Correlation normalization forces the original diagonal to one. Replaying the
 current construction therefore produces an implied marginal rate vector of
-approximately [1, 1, ...] regardless of whether the observed count means are,
-for example, about [5, 10] or [50, 100].
+approximately [1, 1, ...] regardless of the observed count scale.
+
+A formula-level local reproduction using shared-Poisson samples gave:
+
+- low-rate empirical means about [5.0086, 10.0528] -> implied [1.0, 1.0];
+- high-rate empirical means about [49.9618, 99.9160] -> implied [1.0, 1.0].
+
+This reproduction uses the same corrcoef-to-implied-rate algebra as the current
+estimator; it is not yet a full package-level regression run.
 
 Why this matters:
 
@@ -68,6 +75,16 @@ For scalar constant X and random scalar Y:
 - the scalar X correlation path returns 0;
 - the joint (X,Y) correlation matrix is non-finite and maps to -1000;
 - Gaussian MI becomes approximately 0.5 * (0 + 0 - (-1000)) = 500 nats.
+
+A formula-level local reproduction with 500 samples returned:
+
+- constant X vs random Y: 500.0 nats;
+- independent random X vs Y: about 0.000322 nats;
+- identical continuous X=Y: 500.0 nats because it hits the same sentinel.
+
+The identical-variable case is genuinely singular/infinite in the ideal
+continuous model; the problematic diagnostic is that a deterministic constant
+feature receives the same sentinel-driven score.
 
 A deterministic constant predictor should not become an extremely informative
 Path-A feature.
