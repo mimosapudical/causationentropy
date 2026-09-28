@@ -402,6 +402,10 @@ def standard_optimal_causation_entropy(
         Number of permutations for statistical testing.
     information : str, default='gaussian'
         Information measure estimator type.
+    Z_init : array-like of shape (T, p) or None, default=None
+        Initial conditioning set that remains present during backward
+        elimination. Standard oCSE passes the lagged target history here;
+        alternative oCSE leaves it as None.
 
     Returns
     -------
@@ -862,7 +866,9 @@ def backward(
 
     The backward phase is essential for controlling false positive rates in causal
     discovery, as forward selection may include predictors that become redundant
-    when considered alongside other selected variables.
+    when considered alongside other selected variables. When Z_init is provided,
+    every test conditions on Z_init in addition to the other retained predictors,
+    matching the standard-oCSE definition.
     """
     S = copy.deepcopy(S_init)  # working copy
 
