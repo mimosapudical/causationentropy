@@ -57,3 +57,11 @@ Status:
     PACKAGE_PYTEST = NOT_VERIFIED
 
 Do not open an upstream PR until the focused and full default suites pass.
+
+
+## CMI consistency
+
+Gaussian conditional mutual information previously used a private _detcorr
+implementation instead of correlation_log_determinant, so the exact-constant
+handling applied to MI did not propagate to CMI. The branch now routes both MI
+and CMI through the same constant-safe log-determinant implementation.
