@@ -8,6 +8,8 @@ filter for Information-LASSO.
 This is diagnostic only.
 """
 
+import contextlib
+import io
 import json
 from unittest.mock import patch
 
@@ -38,13 +40,16 @@ def run_audit():
         "causationentropy.core.discovery.shuffle_test",
         return_value=fake_shuffle,
     ):
-        graph_significant_only = discover_network(
-            data,
-            method="information_lasso",
-            max_lag=1,
-            n_shuffles=5,
-            only_return_significant=True,
-        )
+        # discover_network reports target progress to stdout. Keep this audit's
+        # stdout machine-readable so run_path_b_v2 can persist valid JSON.
+        with contextlib.redirect_stdout(io.StringIO()):
+            graph_significant_only = discover_network(
+                data,
+                method="information_lasso",
+                max_lag=1,
+                n_shuffles=5,
+                only_return_significant=True,
+            )
 
     return {
         "forced_final_shuffle_pass": False,
