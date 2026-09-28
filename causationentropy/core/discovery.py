@@ -289,14 +289,23 @@ def discover_network(
                 bandwidth=bandwidth,
             )
 
+            # Standard and alternative oCSE already return a set that passed
+            # their forward/backward permutation tests. LASSO-based methods return
+            # coefficient support only, so their final shuffle test is the first
+            # statistical significance gate for an edge.
+            edge_significant = (
+                method in ["standard", "alternative"] or test_result["Pass"]
+            )
+
             if only_return_significant:
-                G.add_edge(
-                    var_names[src_var],
-                    var_names[i],
-                    lag=src_lag,
-                    cmi=cmi,
-                    p_value=test_result["P_value"],
-                )
+                if edge_significant:
+                    G.add_edge(
+                        var_names[src_var],
+                        var_names[i],
+                        lag=src_lag,
+                        cmi=cmi,
+                        p_value=test_result["P_value"],
+                    )
             else:
                 G.add_edge(
                     var_names[src_var],
@@ -304,7 +313,7 @@ def discover_network(
                     lag=src_lag,
                     cmi=cmi,
                     p_value=test_result["P_value"],
-                    significant=True,
+                    significant=edge_significant,
                 )
 
         if not only_return_significant:
