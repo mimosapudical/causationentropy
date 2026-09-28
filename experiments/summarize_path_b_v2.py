@@ -80,6 +80,44 @@ def main():
         print("CRN diagnostic: NOT_RUN")
 
     print()
+    print("## Path-preservation audit")
+    print()
+    path_audit_path = outdir / "04b_path_preservation.json"
+    if path_audit_path.exists():
+        path_audit = load_json(path_audit_path)["by_n"]
+        print(
+            "| N | Base retention | Forward closure in screen | "
+            "Final support in screen | Ordinary restricted | Keyed restricted | "
+            "+ final-support oracle | + forward-closure oracle |"
+        )
+        print("|---:|---:|---:|---:|---:|---:|---:|---:|")
+        for key in sorted(path_audit, key=int):
+            row = path_audit[key]["summary"]
+            print(
+                f"| {key} | {fmt(row['mean_base_retention'])} | "
+                f"{fmt(row['base_forward_closure_recall'])} | "
+                f"{fmt(row['base_final_support_screen_recall'])} | "
+                f"{fmt(row['ordinary_restricted_final_recall'])} | "
+                f"{fmt(row['keyed_restricted_final_recall'])} | "
+                f"{fmt(row['keyed_plus_final_recall'])} | "
+                f"{fmt(row['keyed_plus_forward_recall'])} |"
+            )
+        print()
+        for key in sorted(path_audit, key=int):
+            row = path_audit[key]["summary"]
+            print(
+                f"- N={key} exact-target rates: ordinary="
+                f"{fmt(row['ordinary_restricted_exact_target_rate'])}, "
+                f"keyed={fmt(row['keyed_restricted_exact_target_rate'])}, "
+                f"+final={fmt(row['keyed_plus_final_exact_target_rate'])}, "
+                f"+forward={fmt(row['keyed_plus_forward_exact_target_rate'])}; "
+                f"full sequential/keyed agreement="
+                f"{fmt(row['full_seq_vs_keyed_exact_target_rate'])}"
+            )
+    else:
+        print("Path-preservation audit: NOT_RUN")
+
+    print()
     print("## Gaussian end-to-end")
     print()
     if gaussian:
