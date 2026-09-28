@@ -44,6 +44,16 @@ jobs:
             --alpha 0.05 \
             > experiments/results/path_b_v2_ci/04d_block_certificate.json
 
+      - name: Partitioned low-dimensional certificate audit
+        run: |
+          python -m experiments.path_b_partition_certificate_audit \
+            --nodes 20 50 \
+            --seeds 1 \
+            --retention 0.40 \
+            --alpha 0.05 \
+            --n-shuffles 10 \
+            > experiments/results/path_b_v2_ci/04e_partition_certificate.json
+
       - name: Upload experiment outputs
         if: always()
         uses: actions/upload-artifact@v4
