@@ -1,3 +1,6 @@
+import json
+import subprocess
+import sys
 from unittest.mock import patch
 
 import numpy as np
@@ -171,3 +174,90 @@ def test_logistic_benchmark_case_is_finite_and_bounded():
     assert np.min(data) >= 0.0
     assert np.max(data) <= 1.0
     assert isinstance(truth, set)
+
+
+def test_summary_schema_matches_v2_outputs(tmp_path):
+    frontier = {
+        "gaussian_frontier": {
+            "summary": {
+                "rescue_0.40": {
+                    "mean_retention": 0.4,
+                    "mean_full_forward_recall": 0.98,
+                    "mean_full_support_recall": 1.0,
+                    "targets": 2,
+                }
+            }
+        },
+        "stress": {
+            "hidden_parent": {
+                "endpoint_parent_recall": 0.8,
+                "rescue_parent_recall": 1.0,
+            }
+        },
+    }
+    (tmp_path / "03_screen_frontier.json").write_text(
+        json.dumps(frontier), encoding="utf-8"
+    )
+    (tmp_path / "04_common_random_numbers.json").write_text(
+        json.dumps(
+            {
+                "summary": {
+                    "0.40": {
+                        "mean_actual_retention": 0.4,
+                        "mean_forward_closure_recall": 0.98,
+                        "mean_final_support_screen_recall": 1.0,
+                        "mean_restricted_final_recall": 1.0,
+                        "seeds": 1,
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    gaussian = {
+        "gaussian": {
+            "config": {"n_nodes": 20, "benchmark_role": "primary"},
+            "standard": {"runtime_seconds": 2.0, "f1": 0.9},
+            "path_b_v2": {
+                "runtime_seconds": 1.0,
+                "candidate_retention": 0.4,
+                "screen_full_support_recall": 1.0,
+                "refined_full_support_recall": 1.0,
+                "f1": 0.9,
+            },
+        }
+    }
+    (tmp_path / "05_gaussian_seed_0.json").write_text(
+        json.dumps(gaussian), encoding="utf-8"
+    )
+    (tmp_path / "06_scale_n20_seed_0.json").write_text(
+        json.dumps(gaussian), encoding="utf-8"
+    )
+
+    logistic = {
+        "logistic": {
+            "config": {"benchmark_role": "primary"},
+            "standard": {"f1": 0.8},
+            "path_b_v2": {"f1": 0.8, "screen_full_support_recall": 1.0},
+        }
+    }
+    (tmp_path / "07_logistic_seed_0.json").write_text(
+        json.dumps(logistic), encoding="utf-8"
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "experiments.summarize_path_b_v2",
+            str(tmp_path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "Screening frontier" in completed.stdout
+    assert "Gaussian scaling" in completed.stdout
+    assert "20" in completed.stdout
+    assert "hidden_parent" in completed.stdout
