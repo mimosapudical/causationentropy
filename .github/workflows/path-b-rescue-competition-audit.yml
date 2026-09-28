@@ -1,0 +1,40 @@
+name: Path B rescue competition audit
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - "experiments/path_b_rescue_competition_audit.py"
+      - ".github/workflows/path-b-rescue-competition-audit.yml"
+  workflow_dispatch:
+
+jobs:
+  rescue-competition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run rescue competition audit
+        run: |
+          mkdir -p experiments/results/path_b_rescue_competition
+          python -m experiments.path_b_rescue_competition_audit \
+            --retention 0.40 \
+            --hidden-seeds 20 \
+            > experiments/results/path_b_rescue_competition/rescue_competition.json
+
+      - name: Upload rescue competition result
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-rescue-competition-results
+          path: experiments/results/path_b_rescue_competition
