@@ -350,14 +350,16 @@ def poisson_conditional_mutual_information(X, Y, Z):
         H_X = _poisson_joint_entropy_from_samples(X)
         H_Y = _poisson_joint_entropy_from_samples(Y)
         H_XY = _poisson_joint_entropy_from_samples(np.hstack((X, Y)))
-        return H_X + H_Y - H_XY
+        mi = H_X + H_Y - H_XY
+        return max(0.0, mi) if np.isfinite(mi) else mi
 
     Z = np.atleast_2d(Z)
     H_XZ = _poisson_joint_entropy_from_samples(np.hstack((X, Z)))
     H_YZ = _poisson_joint_entropy_from_samples(np.hstack((Y, Z)))
     H_XYZ = _poisson_joint_entropy_from_samples(np.hstack((X, Y, Z)))
     H_Z = _poisson_joint_entropy_from_samples(Z)
-    return H_XZ + H_YZ - H_XYZ - H_Z
+    cmi = H_XZ + H_YZ - H_XYZ - H_Z
+    return max(0.0, cmi) if np.isfinite(cmi) else cmi
 
 
 def conditional_mutual_information(
