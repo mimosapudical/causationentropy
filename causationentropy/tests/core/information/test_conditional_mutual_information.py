@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from causationentropy.core.information.conditional_mutual_information import (
+    _poisson_rate_matrix_from_correlation,
     conditional_mutual_information,
     gaussian_conditional_mutual_information,
     geometric_knn_conditional_mutual_information,
@@ -669,6 +670,63 @@ class TestPoissonConditionalMutualInformation:
 
         # X and Y should have positive MI since they share base_rate
         assert cmi_no_z > 0
+
+
+    def test_poisson_rate_reconstruction_matches_eq46(self):
+        """Eq. (46) subtracts every shared rate from each private rate."""
+        correlation = np.array(
+            [
+                [1.0, 0.10, 0.05],
+                [0.10, 1.0, 0.08],
+                [0.05, 0.08, 1.0],
+            ]
+        )
+        rates = _poisson_rate_matrix_from_correlation(correlation)
+        expected = np.array(
+            [
+                [0.85, 0.10, 0.05],
+                [0.10, 0.82, 0.08],
+                [0.05, 0.08, 0.87],
+            ]
+        )
+        np.testing.assert_allclose(rates, expected, rtol=0, atol=1e-15)
+
+    def test_poisson_cmi_is_symmetric_with_conditioning(self):
+        """Poisson CMI should be symmetric in X and Y."""
+        rng = np.random.default_rng(123)
+        n = 2000
+        shared_xy = rng.poisson(0.3, size=n)
+        shared_xz = rng.poisson(0.2, size=n)
+        shared_yz = rng.poisson(0.1, size=n)
+        X = (
+            rng.poisson(0.8, size=n) + shared_xy + shared_xz
+        ).reshape(-1, 1)
+        Y = (
+            rng.poisson(0.9, size=n) + shared_xy + shared_yz
+        ).reshape(-1, 1)
+        Z = (
+            rng.poisson(1.0, size=n) + shared_xz + shared_yz
+        ).reshape(-1, 1)
+
+        cmi_xy = poisson_conditional_mutual_information(X, Y, Z)
+        cmi_yx = poisson_conditional_mutual_information(Y, X, Z)
+
+        assert np.isfinite(cmi_xy)
+        assert np.isclose(cmi_xy, cmi_yx, rtol=1e-12, atol=1e-12)
+
+    def test_poisson_cmi_multivariate_partition_is_symmetric(self):
+        """Multivariate X/Y partitions use the same Poisson marginal rule."""
+        rng = np.random.default_rng(321)
+        n = 1000
+        X = rng.poisson(1.0, size=(n, 2)).astype(float)
+        Y = rng.poisson(1.2, size=(n, 3)).astype(float)
+        Z = rng.poisson(0.8, size=(n, 2)).astype(float)
+
+        cmi_xy = poisson_conditional_mutual_information(X, Y, Z)
+        cmi_yx = poisson_conditional_mutual_information(Y, X, Z)
+
+        assert np.isfinite(cmi_xy)
+        assert np.isclose(cmi_xy, cmi_yx, rtol=1e-12, atol=1e-12)
 
 
 class TestKDEConditionalMutualInformation:
