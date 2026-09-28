@@ -1,0 +1,40 @@
+name: Path B iterative rescue audit
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - "experiments/path_b_iterative_rescue_audit.py"
+      - ".github/workflows/path-b-iterative-rescue-audit.yml"
+  workflow_dispatch:
+
+jobs:
+  iterative-rescue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run iterative rescue audit
+        run: |
+          mkdir -p experiments/results/path_b_iterative_rescue
+          python -m experiments.path_b_iterative_rescue_audit \
+            --retention 0.40 \
+            --hidden-seeds 20 \
+            > experiments/results/path_b_iterative_rescue/iterative_rescue.json
+
+      - name: Upload iterative rescue result
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-iterative-rescue-results
+          path: experiments/results/path_b_iterative_rescue
