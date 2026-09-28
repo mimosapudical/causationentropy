@@ -12,8 +12,9 @@ upstream until its branch-level validation runner passes on a real checkout.
 | experiment/poisson-marginalization-fix-v1 | Correct conditional Poisson marginalization | Eq.38/Eq.46 analysis; old raw CMI ~-0.2407 vs corrected ~+0.1169; multivariate crash fixed; source-equivalent 1000-shuffle standard+alternative both TPR=1.0, FPR=0.07143 | branch runner / real pytest | HIGH-VALUE CORRECTNESS FIX |
 | experiment/gaussian-constant-feature-fix-v1 | Stop deterministic constant predictors receiving ~500 nats Gaussian MI | constant MI 500 -> 0; informative MI unchanged after adding constant nuisance coordinate; near-constant variables preserved | branch runner / full default pytest | SMALL CLEAN CORRECTNESS FIX |
 | experiment/standard-self-history-dedup-v1 | Remove standard-oCSE candidate columns already present identically in Z_init | 10/10 duplicated self-history candidates were non-finite in source-equivalent Gaussian audit; repository test already expects no self-loop in one-variable standard case | branch runner / discovery tests | CLEAN LOGIC + COMPUTE FIX |
-| experiment/standard-backward-zinit-fix-v1 | Preserve Z_init during standard backward elimination | Repository theory docs explicitly require Z_init union S_-j; suppression case: legacy MI 0.00555 < 0.00642 threshold, corrected CMI 1.621 > threshold | branch runner / oCSE integration tests | HIGH-VALUE ALGORITHM CORRECTNESS FIX |
+| experiment/standard-backward-zinit-fix-v1 | Preserve Z_init through standard backward + edge reporting | Repository theory docs explicitly require Z_init union S_-j; suppression case: legacy MI 0.00555 < 0.00642 threshold, corrected CMI 1.621 > threshold; reporting regression added | branch runner / oCSE integration tests | HIGH-VALUE ALGORITHM CORRECTNESS FIX |
 | experiment/lasso-posthoc-significance-v1 | Make only_return_significant meaningful for sparse baselines without double-gating oCSE | PR #36 semantics audited; regression tests cover failed/passed sparse supports and preserve standard selected-set semantics | branch runner / discovery tests | API/SEMANTIC FIX |
+| experiment/standard-ocse-correctness-integration-v1 | Interaction test for self-history dedup + Z_init consistency | Source-equivalent repository Gaussian gate with 1000 shuffles recovered all 6/6 true edges and 0 FP | combined branch runner / real pytest | FORK-ONLY INTEGRATION BRANCH |
 | Path-A normalization audit only | Compare I/sum(I) vs I/max(I) | N=20/50/100/200 audited; 100% support equality, 0 warnings both; only design scale changed | None needed now | DO NOT CHANGE PATH A |
 
 ## Path-A normalization decision
@@ -39,8 +40,9 @@ The best order is:
 3. Gaussian constant feature.
 4. Standard self-history dedup.
 5. LASSO/Information-LASSO post-hoc significance.
-6. Path B quick.
-7. Path B full only after all quick/focused gates are green.
+6. Combined standard-oCSE correctness integration.
+7. Path B quick.
+8. Path B full only after all quick/focused gates are green.
 
 The first two have the strongest correctness evidence and the clearest
 methodological impact.
