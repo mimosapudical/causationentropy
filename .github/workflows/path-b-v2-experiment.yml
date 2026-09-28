@@ -26,6 +26,16 @@ jobs:
         run: |
           python -m experiments.run_path_b_v2 --mode quick --outdir experiments/results/path_b_v2_ci
 
+      - name: Beta-min parent-sure screening audit
+        run: |
+          python -m experiments.path_b_beta_min_audit \
+            --nodes 20 50 \
+            --sample-sizes 150 300 \
+            --weight-floors 0.0 0.25 0.5 \
+            --seeds 1 \
+            --retention 0.40 \
+            > experiments/results/path_b_v2_ci/04g_beta_min_screening.json
+
       - name: True-edge detectability audit
         run: |
           python -m experiments.path_b_true_edge_detectability_audit \
