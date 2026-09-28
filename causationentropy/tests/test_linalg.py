@@ -91,15 +91,33 @@ class TestCorrelationLogDeterminant:
         assert result == 0.0
 
     def test_correlation_log_det_constant_variables(self):
-        """Test with constant variables."""
+        """Constant dimensions should not affect a correlation determinant."""
         A = np.array([[1.0, 2.0], [1.0, 3.0], [1.0, 4.0]])
 
-        # First column is constant
         result = correlation_log_determinant(A)
 
-        assert isinstance(result, float)
-        # Constant variable should cause issues with correlation calculation
-        # Function should handle this gracefully
+        # Removing the deterministic first dimension leaves one variable.
+        assert result == 0.0
+
+    def test_correlation_log_det_all_constant_variables(self):
+        """An all-constant deterministic vector has zero information volume."""
+        A = np.ones((10, 3))
+
+        result = correlation_log_determinant(A)
+
+        assert result == 0.0
+
+    def test_correlation_log_det_near_constant_is_preserved(self):
+        """Only exactly constant columns are removed."""
+        x = 1.0 + 1e-12 * np.arange(20)
+        y = np.linspace(-1.0, 1.0, 20)
+        A = np.column_stack([x, y])
+
+        result = correlation_log_determinant(A)
+
+        # The two nonconstant columns are perfectly correlated, so the
+        # correlation matrix remains singular rather than being reduced to 1D.
+        assert result < -10
 
     def test_correlation_log_det_numerical_stability(self):
         """Test numerical stability with various data scales."""
