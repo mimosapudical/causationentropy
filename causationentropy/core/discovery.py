@@ -826,9 +826,13 @@ def backward(
 
     .. math::
 
-        I(X_j^{(t)}; Y^{(t+\tau)} | \mathbf{S}_{-j}^{(t)}) > \text{threshold}
+        I(X_j^{(t)}; Y^{(t+\tau)}
+        | \mathbf{Z}_{\mathrm{init}} \cup \mathbf{S}_{-j}^{(t)})
+        > \text{threshold}
 
-    where :math:`\mathbf{S}_{-j}^{(t)}` represents all selected predictors except :math:`X_j`.
+    where :math:`\mathbf{S}_{-j}^{(t)}` represents all selected predictors
+    except :math:`X_j`. For alternative oCSE, :math:`\mathbf{Z}_{\mathrm{init}}`
+    is empty.
 
     Parameters
     ----------
