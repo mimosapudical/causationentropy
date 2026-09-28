@@ -104,6 +104,7 @@ def main():
         "experiments/path_b_screen_frontier_v2.py",
         "experiments/path_a_weight_normalization_audit.py",
         "experiments/poisson_rate_structure_audit.py",
+        "experiments/poisson_conditional_marginalization_audit.py",
         "experiments/gaussian_constant_feature_audit.py",
         "experiments/self_history_candidate_audit.py",
         "experiments/only_return_significant_audit.py",
@@ -310,6 +311,16 @@ def main():
             5000,
         ),
         outdir / "08_poisson_rate_structure.json",
+    )
+    run_command(
+        python_module(
+            "experiments.poisson_conditional_marginalization_audit",
+            "--seed",
+            123,
+            "--n",
+            2000,
+        ),
+        outdir / "08_poisson_conditional_marginalization.json",
     )
     run_command(
         python_module(
