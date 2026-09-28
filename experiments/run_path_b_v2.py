@@ -105,6 +105,7 @@ def main():
         "experiments/path_a_weight_normalization_audit.py",
         "experiments/poisson_rate_structure_audit.py",
         "experiments/gaussian_constant_feature_audit.py",
+        "experiments/self_history_candidate_audit.py",
         "experiments/run_path_b_v2.py",
         "experiments/summarize_path_b_v2.py",
     ]
@@ -318,6 +319,24 @@ def main():
             500,
         ),
         outdir / "08_gaussian_constant_feature.json",
+    )
+    self_history_seeds = 1 if args.mode == "quick" else 5
+    self_history_shuffles = 10 if args.mode == "quick" else 20
+    run_command(
+        python_module(
+            "experiments.self_history_candidate_audit",
+            "--n-nodes",
+            12,
+            "--T",
+            300,
+            "--max-lag",
+            1,
+            "--seeds",
+            self_history_seeds,
+            "--n-shuffles",
+            self_history_shuffles,
+        ),
+        outdir / "08_self_history_candidate.json",
     )
 
     print("== [10/10] Markdown summary ==")
