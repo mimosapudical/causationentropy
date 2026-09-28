@@ -126,6 +126,16 @@ def main():
             f"- Mean no-shuffle screen CMI scores: "
             f"{fmt(mean(screen_scores), 1)}"
         )
+        total_cmi_reductions = [
+            1.0 - row["path_b_v2"]["total_cmi_evaluations"]
+            / row["standard"]["total_cmi_evaluations"]
+            for row in gaussian
+            if row["standard"].get("total_cmi_evaluations", 0) > 0
+        ]
+        print(
+            f"- Mean total-CMI evaluation reduction: "
+            f"{fmt(mean(total_cmi_reductions))}"
+        )
     else:
         print("No Gaussian result files found.")
 
@@ -140,8 +150,8 @@ def main():
             n_nodes = int(payload["config"]["n_nodes"])
             grouped.setdefault(n_nodes, []).append(payload)
 
-        print("| N | Runs | Candidate retention | Screen recall | Refined recall | Full runtime (s) | Path-B runtime (s) | Speedup | Shuffle-CMI reduction |")
-        print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+        print("| N | Runs | Candidate retention | Screen recall | Refined recall | Full runtime (s) | Path-B runtime (s) | Speedup | Shuffle-CMI reduction | Total-CMI reduction |")
+        print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
         for n_nodes in sorted(grouped):
             rows = grouped[n_nodes]
             full_runtime = [row["standard"]["runtime_seconds"] for row in rows]
@@ -173,11 +183,18 @@ def main():
                 for full, path in zip(full_shuffle, path_shuffle)
                 if full == full and path == path and full > 0
             ]
+            total_cmi_reduction = [
+                1.0 - row["path_b_v2"]["total_cmi_evaluations"]
+                / row["standard"]["total_cmi_evaluations"]
+                for row in rows
+                if row["standard"].get("total_cmi_evaluations", 0) > 0
+            ]
             print(
                 f"| {n_nodes} | {len(rows)} | {fmt(mean(retention))} | "
                 f"{fmt(mean(screen_recall))} | {fmt(mean(refined_recall))} | "
                 f"{fmt(mean(full_runtime), 2)} | {fmt(mean(path_runtime), 2)} | "
-                f"{fmt(mean(speedups), 2)}x | {fmt(mean(shuffle_reduction))} |"
+                f"{fmt(mean(speedups), 2)}x | {fmt(mean(shuffle_reduction))} | "
+                f"{fmt(mean(total_cmi_reduction))} |"
             )
     else:
         print("Scaling benchmark: NOT_RUN")
