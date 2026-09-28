@@ -70,6 +70,18 @@ jobs:
             --n-shuffles 10 \
             > experiments/results/path_b_v2_ci/04e_partition_certificate.json
 
+      - name: Beta-min phase-transition audit
+        run: |
+          python -m experiments.path_b_beta_min_phase_transition \
+            --n-nodes 20 \
+            --T-values 150 300 600 \
+            --beta-values 0.02 0.04 0.08 0.16 \
+            --seeds 2 \
+            --edge-probability 0.10 \
+            --retention 0.40 \
+            --n-shuffles 10 \
+            > experiments/results/path_b_v2_ci/04g_beta_min_phase_transition.json
+
       - name: Upload experiment outputs
         if: always()
         uses: actions/upload-artifact@v4
