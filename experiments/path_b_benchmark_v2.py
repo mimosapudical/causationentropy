@@ -58,7 +58,6 @@ def discovery_work_counter():
         metric,
         k_means,
         bandwidth,
-        reuse_gaussian_context=False,
     ):
         counts["forward_observed_cmi_scores"] += len(candidates)
         return original_scores(
@@ -70,7 +69,6 @@ def discovery_work_counter():
             metric,
             k_means,
             bandwidth,
-            reuse_gaussian_context=reuse_gaussian_context,
         )
 
     def counted_backward(*args, **kwargs):
@@ -158,7 +156,6 @@ def run_discover(data, method, information, max_lag, alpha, n_shuffles, seed, n_
             n_shuffles=n_shuffles,
             random_state=seed,
             n_jobs=n_jobs,
-            reuse_gaussian_context=(information == "gaussian"),
         )
     return graph, time.perf_counter() - start
 
@@ -203,7 +200,6 @@ def run_full_standard_matched(
                 alpha2=alpha,
                 n_shuffles=n_shuffles,
                 information=information,
-                reuse_gaussian_context=(information == "gaussian"),
             )
             support = [
                 int(candidate_ids[int(local_idx)])
@@ -237,7 +233,6 @@ def run_full_standard_matched(
                     rng=rng,
                     n_shuffles=n_shuffles,
                     information=information,
-                    reuse_gaussian_context=(information == "gaussian"),
                 )
                 graph.add_edge(
                     f"X{source}",
@@ -333,7 +328,6 @@ def run_path_b_v2(
                 alpha2=alpha,
                 n_shuffles=n_shuffles,
                 information=information,
-                reuse_gaussian_context=(information == "gaussian"),
             )
             support_by_target[target] = {
                 int(screened[int(local_idx)]) for local_idx in refined_local
@@ -371,7 +365,6 @@ def run_path_b_v2(
                     rng=rng,
                     n_shuffles=n_shuffles,
                     information=information,
-                    reuse_gaussian_context=(information == "gaussian"),
                 )
                 graph.add_edge(
                     f"X{source}",
