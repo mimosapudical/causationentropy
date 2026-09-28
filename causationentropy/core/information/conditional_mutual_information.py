@@ -14,6 +14,7 @@ from causationentropy.core.information.mutual_information import (
     kde_mutual_information,
     knn_mutual_information,
 )
+from causationentropy.core.linalg import correlation_log_determinant
 
 
 def gaussian_conditional_mutual_information(X, Y, Z=None):
@@ -67,15 +68,10 @@ def gaussian_conditional_mutual_information(X, Y, Z=None):
     if Z is None:
         return gaussian_mutual_information(X, Y)
 
-    def _detcorr(A):
-        C = np.corrcoef(A.T)
-        # For 1D input, corrcoef returns scalar 1.0, and log(1.0) = 0.0
-        return 0.0 if np.ndim(C) == 0 else np.linalg.slogdet(C)[1]
-
-    SZ = _detcorr(Z)
-    SXZ = _detcorr(np.hstack((X, Z)))
-    SYZ = _detcorr(np.hstack((Y, Z)))
-    SXYZ = _detcorr(np.hstack((X, Y, Z)))
+    SZ = correlation_log_determinant(Z)
+    SXZ = correlation_log_determinant(np.hstack((X, Z)))
+    SYZ = correlation_log_determinant(np.hstack((Y, Z)))
+    SXYZ = correlation_log_determinant(np.hstack((X, Y, Z)))
 
     cmi = 0.5 * (SXZ + SYZ - SZ - SXYZ)
     return cmi
