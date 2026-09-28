@@ -1,0 +1,74 @@
+name: Path B theory replication
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - ".github/workflows/path-b-theory-replication.yml"
+  workflow_dispatch:
+
+jobs:
+  replicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          mkdir -p experiments/results/path_b_theory_replication
+
+      - name: Five-seed beta-min screening replication
+        run: |
+          python -m experiments.path_b_beta_min_audit \
+            --nodes 20 50 \
+            --sample-sizes 300 \
+            --weight-floors 0.0 0.25 0.5 \
+            --seeds 5 \
+            --retention 0.40 \
+            > experiments/results/path_b_theory_replication/beta_min_screening_5seeds.json
+
+      - name: Suppression rescue at 10 percent
+        run: |
+          python -m experiments.path_b_suppression_phase_transition \
+            --n-nodes 50 --T 200 --beta 0.12 --gamma -0.15 \
+            --rhos 0.7 0.75 0.8 --noise-scale 0.15 \
+            --retention 0.10 --seeds 20 \
+            > experiments/results/path_b_theory_replication/suppression_r10.json
+
+      - name: Suppression rescue at 20 percent
+        run: |
+          python -m experiments.path_b_suppression_phase_transition \
+            --n-nodes 50 --T 200 --beta 0.12 --gamma -0.15 \
+            --rhos 0.7 0.75 0.8 --noise-scale 0.15 \
+            --retention 0.20 --seeds 20 \
+            > experiments/results/path_b_theory_replication/suppression_r20.json
+
+      - name: Suppression rescue at 30 percent
+        run: |
+          python -m experiments.path_b_suppression_phase_transition \
+            --n-nodes 50 --T 200 --beta 0.12 --gamma -0.15 \
+            --rhos 0.7 0.75 0.8 --noise-scale 0.15 \
+            --retention 0.30 --seeds 20 \
+            > experiments/results/path_b_theory_replication/suppression_r30.json
+
+      - name: Suppression rescue at 40 percent
+        run: |
+          python -m experiments.path_b_suppression_phase_transition \
+            --n-nodes 50 --T 200 --beta 0.12 --gamma -0.15 \
+            --rhos 0.7 0.75 0.8 --noise-scale 0.15 \
+            --retention 0.40 --seeds 20 \
+            > experiments/results/path_b_theory_replication/suppression_r40.json
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-theory-replication-results
+          path: experiments/results/path_b_theory_replication
+          if-no-files-found: warn
