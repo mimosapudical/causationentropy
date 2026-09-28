@@ -279,6 +279,24 @@ def main():
     else:
         print("- Gaussian constant-feature audit: NOT_RUN")
 
+    self_history_audit = outdir / "08_self_history_candidate.json"
+    if self_history_audit.exists():
+        row = load_json(self_history_audit)["summary"]
+        print(
+            "- Self-history duplicate nonfinite fraction: "
+            f"{fmt(row['nonfinite_fraction'])}"
+        )
+        print(
+            "- Self-history nonduplicate final-support equality under keyed RNG: "
+            f"{fmt(row['nonduplicate_final_equality_rate'])}"
+        )
+        print(
+            "- Estimated futile shuffle-CMI evaluations from duplicate self-history: "
+            f"{row['estimated_futile_shuffle_evaluations_if_tested_once']}"
+        )
+    else:
+        print("- Self-history candidate audit: NOT_RUN")
+
     print()
     print("## Nonlinear / estimator audit")
     print()
