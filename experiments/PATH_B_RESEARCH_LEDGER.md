@@ -389,3 +389,117 @@ Research changes from here should be accepted only if they close one of:
 
 Everything else belongs in an appendix/diagnostic branch rather than the
 primary method.
+
+
+## 13. New baseline and clean-branch closure
+
+### Linear suppression against forward regression
+
+The budget-matched suppression comparison confirms that greedy forward
+regression is a strong baseline in the purely linear cancellation regime.
+At exact cancellation and the smallest tested realized budget (~12%), Path B
+recovers the hidden parent in 100% of 20 seeds versus 95% for forward
+regression; at 20% and 40% budgets both reach 100%.
+
+This prevents claiming that conditional rescue is uniquely necessary for
+linear-Gaussian suppression.
+
+Workflow:
+https://github.com/mimosapudical/causationentropy/actions/runs/36503565105
+
+Artifact:
+11005984921
+
+### Nonlinear conditional cancellation
+
+A harder construction makes the hidden parent marginally independent of the
+target and removes its population linear residual correlation, while leaving
+positive nonlinear conditional dependence.
+
+Across 20 seeds:
+
+- ~12% realized budget: Path-B KDE 100%, forward regression 25%, marginal KDE
+  top-k 15%, random 10%;
+- ~21%: 100%, 30%, 15%, 15%;
+- 40%: 100%, 55%, 40%, 35%.
+
+This is the strongest current mechanism result distinguishing information-
+theoretic conditional rescue from linear forward screening.
+
+Workflow:
+https://github.com/mimosapudical/causationentropy/actions/runs/36504148473
+
+Artifact:
+11007120574
+
+### Clean implementation branch
+
+Canonical clean stacked Path-B branch:
+
+`feature/information-screened-ocse-path-b`
+
+It is based on `feature/information-lasso-path-a` rather than the
+experiment-heavy research branch.
+
+Public API addition:
+
+`discover_network(..., method="information_screened", screen_retention=0.40)`
+
+Core architecture:
+
+1. remove target-history columns from the external candidate universe;
+2. Information-LASSO endpoint;
+3. one-shot conditional-CMI rescue;
+4. restricted standard-oCSE refinement with target-history conditioning.
+
+Key clean commits:
+
+- `ac4af8e` — initial clean information-screened pathway;
+- `195e804` — source-newline repair after CI caught a generated-code syntax
+  issue; full test workflow then passed;
+- `78e06ed` — align screened refinement with corrected standard-oCSE
+  conditioning semantics;
+- `f0cb894` — regression coverage for the conditioning prerequisite.
+
+### Standalone standard-oCSE correctness prerequisite
+
+Clean fork branch:
+
+`fix/standard-ocse-conditioning-correctness`
+
+Base: upstream main commit
+`116073eef33f8036b0a6f090a9c3a260fb767b8a`.
+
+It contains only:
+
+- target-history candidate de-duplication;
+- preservation of `Z_init` in backward refinement;
+- preservation of `Z_init` in final edge reporting;
+- regression tests.
+
+Final fork test workflow passed on the validated branch.
+
+An attempt to open the upstream PR through the GitHub connector returned
+HTTP 403 `Resource not accessible by integration`.  This is a connector
+permission limitation, not a code or CI failure.  The branch is ready for a
+browser-side upstream PR.
+
+Suggested upstream PR title:
+
+`fix: preserve standard-oCSE conditioning semantics`
+
+Do not combine this fix with Path A or Path B in the upstream review.
+
+## 14. Submission artifact state
+
+A research manuscript draft now exists at:
+
+`experiments/PATH_B_PAPER_DRAFT.md`
+
+It includes the abstract, method, theorem statements, replicated main tables,
+controlled cancellation results, negative results, scope/limitations, related
+work structure, and figure/table plan.
+
+The project has therefore moved out of detector-search mode.  Remaining work is
+review/integration and manuscript polishing rather than creation of another
+algorithm family.
