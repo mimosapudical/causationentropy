@@ -212,6 +212,101 @@ class TestDiscoverNetwork:
         assert len(G.nodes()) == 1
         assert len(G.edges()) == 0  # No self-loops expected
 
+    @patch(
+        "causationentropy.core.discovery.standard_optimal_causation_entropy"
+    )
+    def test_standard_excludes_target_history_from_candidates(
+        self, mock_standard
+    ):
+        """Standard oCSE should not retest columns already present in Z_init."""
+        mock_standard.return_value = []
+        data = np.arange(120, dtype=float).reshape(40, 3)
+
+        discover_network(
+            data,
+            method="standard",
+            max_lag=2,
+            n_shuffles=5,
+        )
+
+        assert mock_standard.call_count == 3
+        for call in mock_standard.call_args_list:
+            X_candidates = call.args[0]
+            Z_init = call.args[2]
+
+            assert X_candidates.shape == (38, 4)
+            assert Z_init.shape == (38, 2)
+            for candidate in X_candidates.T:
+                assert not any(
+                    np.array_equal(candidate, conditioned)
+                    for conditioned in Z_init.T
+                )
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch("causationentropy.core.discovery.conditional_mutual_information")
+    @patch(
+        "causationentropy.core.discovery.standard_optimal_causation_entropy"
+    )
+    def test_standard_maps_local_candidates_without_self_edges(
+        self,
+        mock_standard,
+        mock_cmi,
+        mock_shuffle,
+    ):
+        """Reduced candidate indices should map back to global source variables."""
+        mock_standard.return_value = [0]
+        mock_cmi.return_value = 0.5
+        mock_shuffle.return_value = {
+            "Threshold": 0.1,
+            "Value": 0.5,
+            "Pass": True,
+            "P_value": 0.01,
+        }
+        data = np.random.default_rng(0).normal(size=(40, 3))
+
+        graph = discover_network(
+            data,
+            method="standard",
+            max_lag=1,
+            n_shuffles=5,
+        )
+
+        assert graph.number_of_edges() == 3
+        assert all(source != target for source, target in graph.edges())
+
+    @patch("causationentropy.core.discovery.shuffle_test")
+    @patch("causationentropy.core.discovery.conditional_mutual_information")
+    @patch(
+        "causationentropy.core.discovery.standard_optimal_causation_entropy"
+    )
+    def test_standard_report_all_omits_conditioned_self_history(
+        self,
+        mock_standard,
+        mock_cmi,
+        mock_shuffle,
+    ):
+        """Report-all mode should include only candidates that were actually tested."""
+        mock_standard.return_value = []
+        mock_cmi.return_value = 0.0
+        mock_shuffle.return_value = {
+            "Threshold": 0.1,
+            "Value": 0.0,
+            "Pass": False,
+            "P_value": 1.0,
+        }
+        data = np.random.default_rng(1).normal(size=(30, 3))
+
+        graph = discover_network(
+            data,
+            method="standard",
+            max_lag=2,
+            n_shuffles=5,
+            only_return_significant=False,
+        )
+
+        assert graph.number_of_edges() == 3 * 2 * 2
+        assert all(source != target for source, target in graph.edges())
+
     @patch("causationentropy.core.discovery.conditional_mutual_information")
     def test_discover_network_cmi_integration(self, mock_cmi):
         """Test integration with conditional mutual information function."""
