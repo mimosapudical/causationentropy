@@ -217,13 +217,26 @@ def discover_network(
         print(f"Estimating edges for node {i} ({var_names[i]})")
 
         Y = Y_all[:, [i]]  # shape: (T - max_lag, 1)
+        candidate_ids = list(range(len(feature_names)))
         if method == "standard":
             Z_init = []
             for tau in range(1, max_lag + 1):
                 Z_init.append(series[max_lag - tau : T - tau, i])  # lagged Y_i
             Z_init = np.column_stack(Z_init)  # shape: (T - max_lag, max_lag)
-            S = standard_optimal_causation_entropy(
-                X_lagged,
+
+            # The target's own lagged columns are already present in Z_init.
+            # Testing those identical columns again as candidate causes redundant
+            # I(X_i(t-lag); Y_i(t) | ..., X_i(t-lag), ...) evaluations and can
+            # make correlation-based estimators singular. Standard oCSE therefore
+            # searches only lagged predictors from the other variables.
+            candidate_ids = [
+                idx
+                for idx, (source, _lag) in enumerate(feature_names)
+                if source != i
+            ]
+            X_candidates = X_lagged[:, candidate_ids]
+            S_local = standard_optimal_causation_entropy(
+                X_candidates,
                 Y,
                 Z_init,
                 rng,
@@ -235,6 +248,7 @@ def discover_network(
                 k_means,
                 bandwidth,
             )
+            S = [candidate_ids[idx] for idx in S_local]
         if method == "alternative":
             S = alternative_optimal_causation_entropy(
                 X_lagged,
@@ -259,9 +273,20 @@ def discover_network(
             X_predictor = X_lagged[:, [s]]  # predictor at this lag
             Y_target = Y  # target variable
 
-            # Conditioning set: all other selected predictors for this target
+            # Conditioning set: standard oCSE must retain the target's
+            # initial lag history in reporting, just as in forward/backward.
             other_selected = [idx for idx in S if idx != s]
-            Z_cond = X_lagged[:, other_selected] if other_selected else None
+            Z_selected = (
+                X_lagged[:, other_selected] if other_selected else None
+            )
+            if method == "standard":
+                Z_cond = (
+                    Z_init
+                    if Z_selected is None
+                    else np.hstack((Z_init, Z_selected))
+                )
+            else:
+                Z_cond = Z_selected
 
             # Compute conditional mutual information
             cmi = conditional_mutual_information(
@@ -313,13 +338,20 @@ def discover_network(
             # matches the significant edges above (selected set, minus the
             # candidate itself when it is selected).
             selected = set(S)
-            n_features = len(feature_names)
-            for cand in range(n_features):
+            for cand in candidate_ids:
                 if cand in selected:
                     continue
                 src_var, src_lag = feature_names[cand]
                 X_predictor = X_lagged[:, [cand]]
-                Z_cond = X_lagged[:, S] if S else None
+                Z_selected = X_lagged[:, S] if S else None
+                if method == "standard":
+                    Z_cond = (
+                        Z_init
+                        if Z_selected is None
+                        else np.hstack((Z_init, Z_selected))
+                    )
+                else:
+                    Z_cond = Z_selected
 
                 cmi = conditional_mutual_information(
                     X_predictor,
@@ -424,6 +456,7 @@ def standard_optimal_causation_entropy(
         metric,
         k_means,
         bandwidth,
+        Z_init=Z_init,
     )
 
     return S
@@ -812,6 +845,7 @@ def backward(
     metric="euclidean",
     k_means=5,
     bandwidth="silverman",
+    Z_init=None,
 ):
     r"""
     Backward elimination phase of optimal Causation Entropy.
@@ -865,8 +899,16 @@ def backward(
     S = copy.deepcopy(S_init)  # working copy
 
     for j in rng.permutation(S_init):
-        # conditioning set Z = S \ {j}
-        Z = X_full[:, [k for k in S if k != j]] if len(S) > 1 else None
+        # Condition on the initial set (standard oCSE) plus every other
+        # currently selected predictor. Alternative oCSE leaves Z_init=None.
+        other_ids = [k for k in S if k != j]
+        Z_selected = X_full[:, other_ids] if other_ids else None
+        if Z_init is None:
+            Z = Z_selected
+        elif Z_selected is None:
+            Z = Z_init
+        else:
+            Z = np.hstack((Z_init, Z_selected))
 
         Xj = X_full[:, [j]]
         cmij = conditional_mutual_information(
