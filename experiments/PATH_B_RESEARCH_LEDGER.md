@@ -503,3 +503,61 @@ work structure, and figure/table plan.
 The project has therefore moved out of detector-search mode.  Remaining work is
 review/integration and manuscript polishing rather than creation of another
 algorithm family.
+
+
+## 15. Current PR review surfaces and permission boundary
+
+### Fork PR #7 — clean Path B
+
+https://github.com/mimosapudical/causationentropy/pull/7
+
+Title: `feat: add information-screened oCSE pathway`
+
+Base: `feature/information-lasso-path-a`
+
+Head: `feature/information-screened-ocse-path-b`
+
+At creation it is a clean stacked diff containing only core/test changes, not
+the research workflows.  The latest push workflow on the clean head passes.
+
+This is the canonical review surface for Path B until upstream Path A #45 and
+the standard-oCSE prerequisite are resolved.
+
+### Fork PR #8 — standalone prerequisite review mirror
+
+https://github.com/mimosapudical/causationentropy/pull/8
+
+Title: `review: standard-oCSE conditioning correctness fix`
+
+Base: `review/upstream-main-116073`, pinned exactly to upstream main commit
+`116073eef33f8036b0a6f090a9c3a260fb767b8a`.
+
+Head: `fix/standard-ocse-conditioning-correctness`.
+
+This fork PR exists only because the connected GitHub App cannot open a
+cross-repository upstream PR.  The standalone branch itself has full CI
+success.
+
+### GitHub integration permission boundary
+
+Two attempted upstream writes returned HTTP 403
+`Resource not accessible by integration`:
+
+1. creating the standalone standard-oCSE correctness PR in
+   `Center-For-Complex-Systems-Science/causationentropy`;
+2. posting the Path-B research update comment to upstream issue #44.
+
+Nothing is missing from the branches because of this permission failure.  The
+remaining browser-side actions are administrative only.
+
+Suggested cross-fork correctness compare page:
+
+`https://github.com/Center-For-Complex-Systems-Science/causationentropy/compare/main...mimosapudical:fix/standard-ocse-conditioning-correctness?expand=1`
+
+Suggested upstream fix PR title:
+
+`fix: preserve standard-oCSE conditioning semantics`
+
+The intended issue-#44 progress update is already represented by the body of
+fork PR #7 plus the empirical/theory sections in this ledger, so it can be
+copied without reconstructing results from chat history.
