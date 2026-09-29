@@ -1,0 +1,35 @@
+name: Path B paper figures
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - "experiments/results/path_b_paper_summary_20260929.json"
+      - "experiments/make_path_b_paper_figures.py"
+      - ".github/workflows/path-b-paper-figures.yml"
+  workflow_dispatch:
+
+jobs:
+  figures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install matplotlib numpy
+      - name: Generate
+        run: |
+          python -m experiments.make_path_b_paper_figures
+          find experiments/results/path_b_paper_figures -maxdepth 1 -type f -print
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-paper-figures
+          path: experiments/results/path_b_paper_figures
+          if-no-files-found: error
