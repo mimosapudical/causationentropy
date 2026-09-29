@@ -8,17 +8,17 @@ or a replicated experiment directly supporting it.
 |---|---|---|---|
 | Core problem formulation: expensive oCSE candidate search | DONE | original oCSE theory + repository benchmark work counters | none |
 | Distinguish causal correctness from finite-sample baseline identity | DONE | true-edge detectability audit: baseline-only omitted screen edges are false positives in the current N=50 diagnostic | replicate in broader settings |
-| Restricted-candidate population oCSE corollary | PARTIAL | proof sketch adapted from aggregative discovery + progressive removal | formalize assumptions/notation and write full proof |
+| Restricted-candidate population oCSE corollary | DONE THEORY | proof pinned to the original oCSE faithful-Markov assumptions; screened-universe contradiction argument recorded in the theory notes | polish notation for manuscript |
 | Impossibility of generic monotone score pruning | DONE | Gaussian suppression/collider counterexample | write as lemma/example, not overclaim general impossibility beyond stated class |
-| Weighted Information-LASSO support-containment route | PARTIAL | transformed-design reduction + beta-min/RE proof route; 5-seed beta-min experiments | production BIC/CV tuning not covered by fixed-lambda sufficient condition |
-| Conditional rescue mechanism | STRONG PARTIAL | fixed-parent suppression sweep: endpoint collapses near cancellation while rescue restores 100%; 10-40% budget replication | formal uniform-concentration/ranking-margin proof for data-dependent endpoint |
+| Weighted Information-LASSO support-containment route | DONE MODULAR / CV OPEN | deterministic RE+beta-min theorem, stable-Gaussian-VAR probability bridge, Gaussian weight-visibility bound, and n>p BIC-compatible KKT/OLS certificates are recorded | high-dimensional ordinary K-fold CV branch is a practical variant without a matching support-containment theorem |
+| Conditional rescue mechanism | DONE CONDITIONAL | fixed-parent suppression sweep + 10-40% budget replication; one-shot ranking-margin theorem recorded for uniform CMI error event | manuscript should state the uniform-concentration event as an assumption unless a full data-dependent-set concentration lemma is added |
 | Exact finite-sample path certificate | DONE NEGATIVE | 100% keyed path identity but >1x test/evaluation cost | keep as diagnostic/negative result, not main algorithm |
 | Giant residual-block certificate | DONE NEGATIVE | population identity is clean; finite-sample power collapses with dimension | not a primary method |
 | Partitioned certificate | DONE DIAGNOSTIC | confirms block-size power dilution; actual misses remain ultra-weak | optional appendix |
 | Beta-min phase transition | DONE INITIAL | controlled DAG VAR and 5-seed floored-VAR replication | add confidence intervals / broader N,T,density sweep |
 | Suppression phase transition | DONE INITIAL | fixed coefficients, correlation-controlled cancellation, 20 seeds; budget sweep | replicate at additional T/noise levels if space permits |
 | End-to-end Gaussian accuracy | DONE PRIMARY | five-seed N=12 replication: full F1 0.787±0.136 vs Path-B 0.781±0.124; aggregate 1.57x speedup; 39.2% total-CMI and 41.4% shuffle-CMI reduction | broader N/T/density sweep still useful |
-| Scaling advantage | PARTIAL | quick N20/N50 shows ~1.3-1.5x wall-clock and ~40% CMI-work reduction | replicated N20/N50/N100 run is the remaining scaling gate |
+| Scaling advantage | DONE PRIMARY | 3-seed N20/N50/N100: ~40% candidate retention, mean screen support recall >=0.991, CMI reduction 39.8%/44.4%/48.7%, aggregate speedup 1.54x/1.46x/1.76x | broader density/noise sweeps are optional robustness, not a gate |
 | Comparison baselines | PARTIAL | full oCSE, plain Lasso, Information-Lasso already emitted by benchmark | add/justify strongest relevant screening baselines (e.g. SIS/forward/HOLP where appropriate) |
 | Nonlinear generality | OPEN / OUT OF SCOPE | logistic/Poisson quick results are poor | either explicitly scope paper to Gaussian linear regime or design separate extension |
 | Clean production implementation | OPEN | current branch is experiment-heavy | make clean core branch after method freezes |
@@ -76,3 +76,17 @@ Using the primary N=12, T=300 Gaussian benchmark with 50 shuffles and seeds
 The result is not exact graph reproduction on every seed.  In particular, seed
 3 retains only 90% of full-oCSE edges yet improves truth F1 from 0.595 to 0.629,
 which reinforces the distinction between baseline identity and causal accuracy.
+
+
+## Replicated Gaussian scaling (3 seeds each)
+
+The completed scaling workflow uses N=20,50 with T=300 and N=100 with T=500.
+
+| N | Full F1 | Path-B F1 | Delta F1 | candidate retention | screen full-support recall | CMI reduction | shuffle-CMI reduction | aggregate speedup |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 20 | 0.7932 | 0.8071 | +0.0139 | 0.4211 | 0.9952 | 39.80% | 43.39% | 1.54x |
+| 50 | 0.7234 | 0.7168 | -0.0066 | 0.4082 | 0.9932 | 44.35% | 45.17% | 1.46x |
+| 100 | 0.7100 | 0.7145 | +0.0045 | 0.4040 | 0.9909 | 48.74% | 45.41% | 1.76x |
+
+Across all three sizes the truth-level F1 difference remains small while the
+fraction of expensive CMI work removed grows with the candidate universe.
