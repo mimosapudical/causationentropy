@@ -21,9 +21,9 @@ or a replicated experiment directly supporting it.
 | Scaling advantage | DONE PRIMARY | 3-seed N20/N50/N100: ~40% candidate retention, mean screen support recall >=0.991, CMI reduction 39.8%/44.4%/48.7%, aggregate speedup 1.54x/1.46x/1.76x | broader density/noise sweeps are optional robustness, not a gate |
 | Comparison baselines | DONE PRIMARY | budget-matched marginal information, forward regression, and random screens at N=20/50; controlled linear and nonlinear cancellation comparisons | broader external baselines are optional rather than a primary gate |
 | Nonlinear generality | OPEN / OUT OF SCOPE | logistic/Poisson quick results are poor | either explicitly scope paper to Gaussian linear regime or design separate extension |
-| Clean production implementation | IN PROGRESS / CLEAN BRANCH | `feature/information-screened-ocse-path-b` contains only the new API/core path and tests, stacked on Path A; standard-oCSE prerequisite branch is separately validated | final stacked CI + upstream dependency handling |
-| Full paper write-up | DRAFTED | `PATH_B_PAPER_DRAFT.md` contains abstract, method, theorem statements, main tables, negative results, limitations, and figure plan | convert results to figures and polish proof/related-work prose |
-| Upstream review | OPEN | maintainer expressed interest in Path B | only after clean, verified result |
+| Clean production implementation | DONE IN FORK / UPSTREAM STACK BLOCKED | `feature/information-screened-ocse-path-b` is a 3-file, 6-commit clean diff on Path A; fork PR #7 is open, non-draft, mergeable/clean. The standard-oCSE prerequisite is isolated in fork PR #8, also open, non-draft, mergeable/clean. | upstream write permission + dependency order (#45 -> standard fix -> Path B) |
+| Full paper write-up | DRAFTED + FIGURES | `PATH_B_PAPER_DRAFT.md` contains abstract, method, theorem statements, main tables, negative results, limitations, and figure plan; first SVG figure artifact is generated | polish proofs/citations/related-work prose and optional robustness sweeps |
+| Upstream review | EXTERNALLY BLOCKED | maintainer expressed interest in Path B; upstream #45 is open/clean; progress comment and correctness-PR creation were attempted via the connected GitHub App on 2026-09-29 and both returned HTTP 403 `Resource not accessible by integration` | two browser-side upstream actions, then maintainer review/merge |
 
 ## Current scientific claim that is supported
 
@@ -45,15 +45,19 @@ penalty.
 
 ## Critical path to a submission-quality result
 
-1. Close the tuning/proof alignment:
-   - analyze the selected LARS/BIC path directly, OR
-   - introduce a theorem-backed screening/tuning variant and clearly separate
-     it from the practical BIC/CV variant.
-2. Formalize the rescue ranking-margin theorem with a valid treatment of the
-   data-dependent conditioning set (uniform concentration or cross-fitting).
-3. Finish replicated Gaussian end-to-end/scaling experiments and strongest
-   baseline comparisons.
-4. Freeze the algorithm, produce a clean implementation, and write the paper.
+The method-search and primary replication gates are closed. Remaining work is
+paperization / upstream integration rather than new algorithm search:
+
+1. polish theorem notation, constants, and citations; keep the ordinary
+   high-dimensional K-fold LassoCV branch explicitly outside the strongest
+   support-containment theorem unless a matched result is added;
+2. present the one-shot rescue ranking-margin result with the uniform CMI error
+   event stated explicitly (or add a stronger data-dependent-set concentration
+   lemma as an optional theory extension);
+3. perform only optional robustness sweeps (density/noise/additional T) if they
+   materially strengthen the manuscript;
+4. complete upstream dependency handling: #45 -> standard-oCSE correctness fix
+   -> rebase/open final Path-B upstream PR.
 
 
 ## Five-seed primary Gaussian replication
