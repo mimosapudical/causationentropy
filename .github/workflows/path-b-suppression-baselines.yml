@@ -1,0 +1,35 @@
+name: Path B suppression baselines
+
+on:
+  push:
+    branches:
+      - experiment/path-b-benchmark-v2
+    paths:
+      - "experiments/path_b_suppression_baselines.py"
+      - ".github/workflows/path-b-suppression-baselines.yml"
+  workflow_dispatch:
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          mkdir -p experiments/results/path_b_suppression_baselines
+      - name: Run
+        run: |
+          python -m experiments.path_b_suppression_baselines             --n-nodes 50 --T 200             --beta 0.12 --gamma -0.15             --rhos 0.7 0.75 0.8             --retentions 0.10 0.20 0.40             --noise-scale 0.15             --seeds 20             > experiments/results/path_b_suppression_baselines/results.json
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-suppression-baseline-results
+          path: experiments/results/path_b_suppression_baselines
+          if-no-files-found: warn
