@@ -588,3 +588,37 @@ Artifact ID: `11006168783` (`path-b-paper-figures`).
 This means the current manuscript numbers and first three core figures are
 generated from one frozen machine-readable summary rather than copied manually
 from separate CI artifacts.
+
+
+## Final fork-side completion status — 2026-09-29
+
+The fork-side implementation/research work is now frozen and organized.
+
+### Clean review objects
+
+- Path A upstream PR #45: OPEN, non-draft, mergeable/clean.
+- Path B fork PR #7: OPEN, non-draft, mergeable/clean; 6 commits / 3 files.
+- Standard-oCSE prerequisite fork PR #8: OPEN, non-draft, mergeable/clean;
+  3 commits / 3 files.
+
+### Upstream write-permission blocker
+
+On 2026-09-29 the connected GitHub App was used to attempt both remaining
+upstream writes:
+
+1. create the cross-fork standard-oCSE correctness PR;
+2. post the prepared Path-B progress comment to upstream issue #44.
+
+GitHub rejected both with HTTP 403 `Resource not accessible by integration`.
+No further repository-side action can remove this permission boundary.
+
+Exact browser-ready actions are stored in
+`experiments/UPSTREAM_ACTIONS_READY.md`.
+
+### Canonical compact implementation map
+
+See `experiments/PATH_B_IMPLEMENTATION_MAP.md`.
+
+No additional Path-B algorithm branch should be created unless new evidence
+invalidates the frozen Proposal -> conditional rescue -> restricted-oCSE
+architecture.
