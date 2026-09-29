@@ -149,3 +149,22 @@ Current upstream dependency order:
 Do not open the current Path-B branch against upstream main before these
 dependencies are resolved, because it would duplicate Path A and the
 prerequisite fix in the upstream diff.
+
+
+## Connected GitHub App write-permission check — 2026-09-29
+
+Both remaining upstream writes were attempted directly from the connected
+GitHub integration and were rejected by GitHub with:
+
+`HTTP 403: Resource not accessible by integration`
+
+Specifically:
+
+1. posting the prepared Path-B progress comment to upstream issue #44;
+2. creating the prepared cross-fork standard-oCSE correctness PR against
+   upstream `main`.
+
+Therefore these are not unfinished repository tasks. They are the only two
+browser-side actions that require the user's own GitHub session (or a GitHub
+integration with upstream write permission). All branches, descriptions,
+tests, review mirrors, and dependency ordering are already prepared.
