@@ -118,3 +118,18 @@ Across 20 seeds:
 The visible parent is recovered in every run by Path-B, forward regression,
 and marginal KDE.  The difference is therefore localized to the marginally
 invisible nonlinear parent.
+
+
+## Paper figure artifact
+
+The first manuscript figure set is generated from the frozen summary JSON by
+`experiments.make_path_b_paper_figures`.
+
+Successful workflow:
+https://github.com/mimosapudical/causationentropy/actions/runs/36504903923
+
+Artifact `11006168783` contains:
+
+- scaling.svg;
+- linear_suppression.svg;
+- nonlinear_cancellation.svg.
