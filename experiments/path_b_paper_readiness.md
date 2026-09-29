@@ -19,10 +19,10 @@ or a replicated experiment directly supporting it.
 | Suppression phase transition | DONE INITIAL | fixed coefficients, correlation-controlled cancellation, 20 seeds; budget sweep | replicate at additional T/noise levels if space permits |
 | End-to-end Gaussian accuracy | DONE PRIMARY | five-seed N=12 replication: full F1 0.787±0.136 vs Path-B 0.781±0.124; aggregate 1.57x speedup; 39.2% total-CMI and 41.4% shuffle-CMI reduction | broader N/T/density sweep still useful |
 | Scaling advantage | DONE PRIMARY | 3-seed N20/N50/N100: ~40% candidate retention, mean screen support recall >=0.991, CMI reduction 39.8%/44.4%/48.7%, aggregate speedup 1.54x/1.46x/1.76x | broader density/noise sweeps are optional robustness, not a gate |
-| Comparison baselines | PARTIAL | full oCSE, plain Lasso, Information-Lasso already emitted by benchmark | add/justify strongest relevant screening baselines (e.g. SIS/forward/HOLP where appropriate) |
+| Comparison baselines | DONE PRIMARY | budget-matched marginal information, forward regression, and random screens at N=20/50; controlled linear and nonlinear cancellation comparisons | broader external baselines are optional rather than a primary gate |
 | Nonlinear generality | OPEN / OUT OF SCOPE | logistic/Poisson quick results are poor | either explicitly scope paper to Gaussian linear regime or design separate extension |
-| Clean production implementation | OPEN | current branch is experiment-heavy | make clean core branch after method freezes |
-| Full paper write-up | OPEN | theory note + experiment artifacts exist | theorem proof, figures, related work, manuscript |
+| Clean production implementation | IN PROGRESS / CLEAN BRANCH | `feature/information-screened-ocse-path-b` contains only the new API/core path and tests, stacked on Path A; standard-oCSE prerequisite branch is separately validated | final stacked CI + upstream dependency handling |
+| Full paper write-up | DRAFTED | `PATH_B_PAPER_DRAFT.md` contains abstract, method, theorem statements, main tables, negative results, limitations, and figure plan | convert results to figures and polish proof/related-work prose |
 | Upstream review | OPEN | maintainer expressed interest in Path B | only after clean, verified result |
 
 ## Current scientific claim that is supported
@@ -90,3 +90,31 @@ The completed scaling workflow uses N=20,50 with T=300 and N=100 with T=500.
 
 Across all three sizes the truth-level F1 difference remains small while the
 fraction of expensive CMI work removed grows with the candidate universe.
+
+
+## Nonlinear conditional-cancellation baseline
+
+A controlled nonlinear construction separates the conditional-information
+rescue from both marginal information screening and linear forward regression:
+
+[
+X_2=-a(X_1^2-1)+U,
+qquad
+Y=X_2+a(X_1^2-1)+epsilon=U+epsilon.
+]
+
+Thus (X_1) is a direct structural parent but is population-marginally
+independent of (Y), while its linear residual correlation after fitting
+(X_2) also vanishes in the population.
+
+Across 20 seeds:
+
+| realized retention | Path-B KDE hidden recall | forward regression | marginal KDE top-k | random |
+|---:|---:|---:|---:|---:|
+| ~12% | 1.00 | 0.25 | 0.15 | 0.10 |
+| ~21% | 1.00 | 0.30 | 0.15 | 0.15 |
+| 40% | 1.00 | 0.55 | 0.40 | 0.35 |
+
+The visible parent is recovered in every run by Path-B, forward regression,
+and marginal KDE.  The difference is therefore localized to the marginally
+invisible nonlinear parent.
