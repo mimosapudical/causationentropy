@@ -561,3 +561,30 @@ Suggested upstream fix PR title:
 The intended issue-#44 progress update is already represented by the body of
 fork PR #7 plus the empirical/theory sections in this ledger, so it can be
 copied without reconstructing results from chat history.
+
+
+## 16. Paper figure generation
+
+The frozen paper summary is committed at:
+
+`experiments/results/path_b_paper_summary_20260929.json`
+
+Figure generator:
+
+`experiments/make_path_b_paper_figures.py`
+
+It generates:
+
+- `scaling.svg`;
+- `linear_suppression.svg`;
+- `nonlinear_cancellation.svg`.
+
+The figure workflow completed successfully:
+
+https://github.com/mimosapudical/causationentropy/actions/runs/36504903923
+
+Artifact ID: `11006168783` (`path-b-paper-figures`).
+
+This means the current manuscript numbers and first three core figures are
+generated from one frozen machine-readable summary rather than copied manually
+from separate CI artifacts.
