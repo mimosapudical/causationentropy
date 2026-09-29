@@ -26,6 +26,7 @@ jobs:
       - name: Run
         run: |
           python -m experiments.path_b_nonlinear_cancellation_baselines             --n-nodes 20             --T 300             --a 1.0             --sigma-u 1.0             --noise-scale 0.2             --retentions 0.10 0.20 0.40             --seeds 20             > experiments/results/path_b_nonlinear_cancellation/results.json
+          cat experiments/results/path_b_nonlinear_cancellation/results.json
       - name: Upload
         if: always()
         uses: actions/upload-artifact@v4
