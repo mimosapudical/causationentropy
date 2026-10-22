@@ -1,0 +1,156 @@
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 43%]
+........................................................................ [ 58%]
+........................................................................ [ 72%]
+........................................................................ [ 87%]
+................................................................         [100%]
+=============================== warnings summary ===============================
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_empty_arrays
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_empty_arrays
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:571: RuntimeWarning: Mean of empty slice.
+    avg = a.mean(axis, **keepdims_kw)
+
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_empty_arrays
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_empty_arrays
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/_core/_methods.py:136: RuntimeWarning: invalid value encountered in divide
+    ret = um.true_divide(
+
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_empty_arrays
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_single_sample
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_empty_arrays
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_single_point
+causationentropy/tests/test_linalg.py::TestCorrelationLogDeterminantEdgeCases::test_single_sample
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:3057: RuntimeWarning: Degrees of freedom <= 0 for slice
+    c = cov(x, y, rowvar, dtype=dtype)
+
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_empty_arrays
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_single_sample
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_empty_arrays
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_single_point
+causationentropy/tests/test_linalg.py::TestCorrelationLogDeterminantEdgeCases::test_single_sample
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:2914: RuntimeWarning: divide by zero encountered in divide
+    c *= np.true_divide(1, fact)
+
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_empty_arrays
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_single_sample
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_empty_arrays
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_single_point
+causationentropy/tests/test_linalg.py::TestCorrelationLogDeterminantEdgeCases::test_single_sample
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:2914: RuntimeWarning: invalid value encountered in multiply
+    c *= np.true_divide(1, fact)
+
+causationentropy/tests/core/information/test_conditional_mutual_information.py: 3 warnings
+causationentropy/tests/core/information/test_mutual_information.py: 3 warnings
+causationentropy/tests/test_linalg.py: 5 warnings
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/linalg/_linalg.py:2374: RuntimeWarning: invalid value encountered in slogdet
+    sign, logdet = _umath_linalg.slogdet(a, signature=signature)
+
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_constant_variables
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_constant_variables
+causationentropy/tests/test_linalg.py::TestCorrelationLogDeterminant::test_correlation_log_det_constant_variables
+causationentropy/tests/test_linalg.py::TestCorrelationLogDeterminantEdgeCases::test_two_samples_identical
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:3065: RuntimeWarning: invalid value encountered in divide
+    c /= stddev[:, None]
+
+causationentropy/tests/core/information/test_conditional_mutual_information.py::TestEdgeCases::test_cmi_constant_variables
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_constant_variables
+causationentropy/tests/test_linalg.py::TestCorrelationLogDeterminant::test_correlation_log_det_constant_variables
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:3066: RuntimeWarning: invalid value encountered in divide
+    c /= stddev[None, :]
+
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_zero_distances
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_identical_points
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_rank_deficient_neighborhoods
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_target_line_coverage
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_infinite_correction_trigger
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_extreme_aspect_ratios
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/core/information/entropy.py:60: RuntimeWarning: invalid value encountered in divide
+    transformed = (Z_i @ Vt.T[:, :r]) / S
+
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_svd_failure
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/core/information/entropy.py:223: UserWarning: Geometric correction failed for 10/10 points. Entropy estimate may be biased.
+    warnings.warn(
+
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_infinite_correction_trigger
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_extreme_aspect_ratios
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/linalg/_linalg.py:2792: RuntimeWarning: overflow encountered in dot
+    sqnorm = x.dot(x)
+
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_force_non_finite_correction
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/core/information/entropy.py:28: RuntimeWarning: invalid value encountered in subtract
+    return np.linalg.norm(a - b)
+
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_force_non_finite_correction
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/core/information/entropy.py:185: RuntimeWarning: invalid value encountered in subtract
+    Y_i = X[np.append([i], Xknn[i, :]), :] - np.mean(
+
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_force_non_finite_correction
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_nan_input_handling
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/core/information/entropy.py:223: UserWarning: Geometric correction failed for 4/4 points. Entropy estimate may be biased.
+    warnings.warn(
+
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_extreme_aspect_ratios
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/core/information/entropy.py:60: RuntimeWarning: divide by zero encountered in divide
+    transformed = (Z_i @ Vt.T[:, :r]) / S
+
+causationentropy/tests/core/information/test_entropy.py::TestGeometricKNNEntropyEdgeCases::test_geometric_knn_entropy_direct_mock_non_finite
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/core/information/entropy.py:223: UserWarning: Geometric correction failed for 1/3 points. Entropy estimate may be biased.
+    warnings.warn(
+
+causationentropy/tests/core/information/test_mutual_information.py::TestGeometricKNNMutualInformation::test_geometric_knn_mi_non_finite_handling
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/core/information/mutual_information.py:238: UserWarning: NaN result in geometric_knn_mutual_information. Returning 0.0
+    warnings.warn("NaN result in geometric_knn_mutual_information. Returning 0.0")
+
+causationentropy/tests/core/information/test_mutual_information.py::TestEdgeCases::test_constant_variables
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:3063: RuntimeWarning: invalid value encountered in divide
+    return c / c
+
+causationentropy/tests/test_discovery.py::TestDiscoverNetwork::test_discover_network_minimum_data_size
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/core/information/conditional_mutual_information.py:80: RuntimeWarning: invalid value encountered in scalar subtract
+    cmi = 0.5 * (SXZ + SYZ - SZ - SXYZ)
+
+causationentropy/tests/test_discovery.py::TestDiscoverNetwork::test_discover_network_minimum_data_size
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:4671: RuntimeWarning: invalid value encountered in subtract
+    diff_b_a = subtract(b, a)
+
+causationentropy/tests/test_graph_utils.py::TestApplyTestCorrection::test_warns_on_insufficient_shuffles
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/tests/test_graph_utils.py:729: DeprecationWarning: The numpy.linalg.linalg has been made private and renamed to numpy.linalg._linalg. All public functions exported by it are available from numpy.linalg. Please use numpy.linalg.__warningregistry__ instead.
+    with self.assertWarns(UserWarning):
+
+causationentropy/tests/test_linalg.py::TestCorrelationLogDeterminant::test_correlation_log_det_with_infs
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:2908: RuntimeWarning: invalid value encountered in subtract
+    X -= avg[:, None]
+
+causationentropy/tests/test_synthetic.py::TestLogisticDynamics::test_logistic_dynamics_adjacency_properties
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/datasets/synthetic.py:6: RuntimeWarning: overflow encountered in multiply
+    return r * X * (1 - X)
+
+causationentropy/tests/test_synthetic.py::TestLogisticDynamics::test_logistic_dynamics_adjacency_properties
+  /workspace/scratch/9f33a3d42525/causationentropy_review_20261022/causationentropy/datasets/synthetic.py:32: RuntimeWarning: invalid value encountered in dot
+    - sigma * np.dot(L, logistic_map(XY[i - 1, :], r)).T
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.14-final-0 _______________
+
+Name                                                                  Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------------------------------------
+causationentropy/__init__.py                                              5      0   100%
+causationentropy/core/__init__.py                                         3      0   100%
+causationentropy/core/discovery.py                                      246      4    98%   401, 689, 725, 760
+causationentropy/core/information/__init__.py                             4      0   100%
+causationentropy/core/information/conditional_mutual_information.py     110      0   100%
+causationentropy/core/information/entropy.py                             89      0   100%
+causationentropy/core/information/mutual_information.py                  46      0   100%
+causationentropy/core/linalg.py                                          37      0   100%
+causationentropy/core/plotting.py                                       263     63    76%   23-25, 42-43, 645, 720-808
+causationentropy/core/stats.py                                          183      0   100%
+causationentropy/datasets/__init__.py                                     2      0   100%
+causationentropy/datasets/synthetic.py                                  125      9    93%   173, 186-190, 200, 291, 312
+causationentropy/graph/__init__.py                                        1      0   100%
+causationentropy/graph/utils.py                                         215      6    97%   384, 420, 618-619, 625-626
+---------------------------------------------------------------------------------------------------
+TOTAL                                                                  1329     82    94%
+Coverage HTML written to dir htmlcov
+496 passed, 17 deselected, 60 warnings in 53.76s
